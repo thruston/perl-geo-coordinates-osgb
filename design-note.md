@@ -52,7 +52,7 @@ as a separate polygon following the WKT format.
 The first (and last) pair should always be the SW corner, if an extension
 affects the SW corner, start and end with the regular corner pair even if they
 are technically redundant.  This allows me to find the SW corners currently
-defined for the Landranger maps easily.
+defined for the Landranger maps easily.  In the Landranger series this only affect sheet 162.
 
 
 
