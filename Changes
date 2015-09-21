@@ -1,0 +1,135 @@
+Revision history for Perl extension Geo::Coordinates::OSGB
+
+2.09 October 2015
+
+    - Improved and generalized handling of maps to allow for multiple series, insets, and irregular boundaries
+    - Complete insets and extensions to sheet boundaries for Landranger maps
+    - Added sheet boundaries for old One Inch 7th series maps
+    - Initial definitions of sheet boundaries for Explorer series of 1:25000 maps
+    - Reorganized distribution: 
+      -- example scripts are in examples/
+      -- map definitions are in maps/
+
+2.08 June 2015
+
+    - reduced size of the data table in OSTN02 and improved loading time
+
+    - new "random_grid" function in OSGB returns a random point on a random Landranger map.
+      See "gbguessr.pl" script for example use to compare OS maps and Google maps on same point
+    
+    - removed old kml generating example script
+    - revised and improved documentation
+
+2.07  June 2015
+
+    - removed dependency on Math::Trig for tan and sec functions
+    - removed unnecessary package variables from OSTN02
+    - simplified unpacking of data in OSTN02
+
+2.06  October 2013
+
+    - removed precise URL for theory paper - the OS keep moving it about, so just Google for the name
+    - removed non-ascii characters from POD in OSGB.pm to avoid encoding issue
+    
+
+2.05  31 August 2013
+
+    - Put blank lines back in OSTN02 to prevent pod2html taking an age during install
+    - Refactored OSGB and OSTN02 lightly to conform more closely to "Perl Best Practices"
+    - corrected corner coordinate data for Landranger sheets 1 and 185
+
+2.04  6 November 2008
+
+    - Rework search of OSTN02 data to improve performance and reliability
+    - Add range checking of OSTN02 coordinates
+    - Compress OSTN02 data to hexadecimal form to speed up loading
+    - Change selection of data in 03random.t test to avoid off-the-sheet errors
+    - Minor tidy up changes in OSGB
+    - Complete overhaul of the documentation
+    - removed old "coco.pl" example script
+    - added new example script to show all "000 000" grid references
+
+2.03 Not released
+
+2.02 22 September 2008
+
+    - Removed irritating degree sign from verbose test message (no functional change)
+    - Make parse_landranger_grid behave better in scalar context
+    - Improve useability of parse_grid
+    - Correct GR of SW corner of Landranger Sheet 3
+    - Further optimize handling of OSTN02 data to prevent data parsing at pod2man time
+    - Improve documentation
+    - More example scripts (with notes)
+
+2.01 6 September 2007
+
+    - Optimized handling of OSTN02 data to reduce memory requirements *and* speed it up.
+
+2.00 4 September 2007
+
+    - New version with routines to do adjustment to and from latitude and
+      longitude coordinates based on the (now ubiquitous) WGS84 model, for
+      more compatible use with GPS receivers and Google Earth and similar
+      tools.
+
+    - Includes not only fast approximate adjustment as used in most
+      coordinate tools and devices, but also the definitive-but-slow OSTN02
+      transformation based on OSGB data
+
+    - Step version number
+
+    - POD completely revised
+
+
+1.07 7 September 2005
+
+       - corrected link in POD
+
+       - various minor documentation corrections
+
+1.06 16 May 2005
+
+       - general clean up
+
+       - made the format and parse routines external to avoid spaghetti connections
+
+       - added support for grid references in GPS format (eg TQ 32342 24312)
+
+1.05 29 March 2005
+
+       - Not released
+
+1.04  29 September 2004
+
+        - corrected a bug in grid2ll, where long/lat values with 0 degrees
+          were always printed as positive in scalar form The problem was that
+          -1 * 0 = +0 in Perl (as it says in the Camel book somewhere).
+
+        - added simple coco.pl script to provide command line coordinate
+          conversions.
+
+        - actually implemented the long-promised map2ll and ll2map functions
+          as well as map2grid and grid2map for completeness.  With these
+          functions you can convert to and from coordinates in a more useable
+          form, such as "OS Sheet 43; 875123".
+
+        - added a demonstration script --- plotmaps.pl --- which will produce
+          a pretty index of the Landranger maps, showing the GB coast line
+          and the large grid squares.  The output is in PostScript.  Use
+          GhostScript to process it.  A PDF version of the output is also
+          included.
+
+        - added a useful file with all the names and other details of the
+          Landranger Sheets
+
+1.03  18 December 2002
+        - changed name for CPAN release
+        - improved ll2grid function
+        - new ll2map and map2ll functions
+
+
+1.02  November 13, 2002
+        - No changes to code, just tidied the documentation
+
+0.01  Fri Mar  2 19:05:50 2001
+        - original version; created by h2xs 1.19
