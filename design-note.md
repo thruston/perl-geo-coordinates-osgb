@@ -60,46 +60,46 @@ defined for the Landranger maps easily.
 
 ## Transformations
 
-desired transformations are from GPS LL data to and from OSGB grid
-                            from OSGB36 grid to from UK LL references
-                            (Airy36)
-                            (for checking on maps, testing)
+desired transformations are 
+
+- from GPS LL data to and from OSGB grid
+- from OSGB36 grid to from UK LL references (Airy36) (for checking on maps, testing)
 
 
-for OSGB36 grid to Airy1830 LL we just need to do xy_to_ll with
+For OSGB36 grid to Airy1830 LL we just need to do xy_to_ll with
 right parms
 
 and vice versa
 
-for OSGB36 grid to WGS84 (ETRS89) we have to transform grid
+For OSGB36 grid to WGS84 (ETRS89) we have to transform grid
 (backwards) with OSTN02 to WGS84 pseudo grid then use xy_to_ll to
 get to ll
 
-from WGS84 to OSGB36 grid, we use ll_to_xy (with WGS84 shape) to get
+From WGS84 to OSGB36 grid, we use ll_to_xy (with WGS84 shape) to get
 to ps-grid then OSTN02 to get to OSGB36 grid
 
 
-grid_to_ll   (e,n, reference)
-grid_to_ll  (e, n, [OSGB36])        # default to OSGB36
-grid_to_ll  (e, n, [ETRS89])
+    grid_to_ll   (e,n, reference)
+    grid_to_ll  (e, n, [OSGB36])        # default to OSGB36
+    grid_to_ll  (e, n, [ETRS89])
 
-ll_to_grid (lat, lon, [OSGB36])
-ll_to_grid (lat, lon, [ETRS89])
+    ll_to_grid (lat, lon, [OSGB36])
+    ll_to_grid (lat, lon, [ETRS89])
 
-OSGB36_to_ETRS89 (e,n)
-ETRS89_to_OSGB36 (e,n)
+    OSGB36_to_ETRS89 (e,n)
+    ETRS89_to_OSGB36 (e,n)
 
-(lat,lon) = OSGB_to_GPX(e,n)
-          = grid_to_ll(OSGB36_to_ETRS89($e,$n),{shape => ETRS89});
+    (lat,lon) = OSGB_to_GPX(e,n)
+              = grid_to_ll(OSGB36_to_ETRS89($e,$n),{shape => ETRS89});
 
-(e,n)     = GPX_to_OSGB(lat,lon)
-          = ETRS89_to_OSGB36(ll_to_grid(lat,lon,{shape => ETRS89}));
+    (e,n)     = GPX_to_OSGB(lat,lon)
+              = ETRS89_to_OSGB36(ll_to_grid(lat,lon,{shape => ETRS89}));
 
-(lat,lon) = grid_to_ll (e,n,{shape => "OSGB36"});
-(lat,lon) = grid_to_ll (e,n);
+    (lat,lon) = grid_to_ll (e,n,{shape => "OSGB36"});
+    (lat,lon) = grid_to_ll (e,n);
 
-(e,n)     = ll_to_grid (lat,lon,{shape=>"OSGB36"});
-(e,n)     = ll_to_grid (lat,lon)
+    (e,n)     = ll_to_grid (lat,lon,{shape=>"OSGB36"});
+    (e,n)     = ll_to_grid (lat,lon)
 
 
 We can also do the (approximate) Molodensky transformation used in
@@ -107,18 +107,16 @@ Garmin GPS.  To show BNG the Garmin takes WGS84 coordinates, does a
 Molo to transform (approx) to Airy 1830, and does the equivalent of
 ll_to_grid using OSGB36 shape.
 
+         WGS84                OSGB36
 
-
-     WGS84                OSGB36
-
-LL     A-------Molo---------->a
-       |                      |
-       |                      |
-      ll2grid               ll2grid
-       |                      |
-       |                      |
-       V                      V
-Grid   *------OSTN02 -----> B~b
+    LL     A-------Molo---------->a
+           |                      |
+           |                      |
+          ll2grid               ll2grid
+           |                      |
+           |                      |
+           V                      V
+    Grid   *------OSTN02 -----> B~b
 
 B and b are approx equal.
 B is definitive.  b is what you'll see on your eTrex.
