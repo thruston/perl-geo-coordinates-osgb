@@ -27,11 +27,6 @@ sub polygon_area_in_km {
     return $a/2_000_000;
 }
 
-sub plot_poly {
-    my ($p, $s) = @_;
-    my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$p}; 
-    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[blue,white]; draw p;  ", $path, $s;
-}
 
 
 my %label_for;
@@ -53,8 +48,6 @@ while (<>) {
     }
 }
 
-open(my $plotter, '>', 'plot.mp');
-print $plotter ' prologues := 3; outputtemplate := "%j%c.eps"; beginfig(1); path p;', "\n";
 
 for my $k (sort keys %polygons_for ) {
     print "$k - Sheet $label_for{$k} -"; 
@@ -63,10 +56,7 @@ for my $k (sort keys %polygons_for ) {
         $n++;
         print " ";
         print polygon_area_in_km($p);
-        print $plotter plot_poly($p, $label_for{$k}), "\n"; 
     }
     print "\n";
 }
 
-print $plotter "endfig;end.\n";
-close $plotter;
