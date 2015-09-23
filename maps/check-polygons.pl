@@ -30,7 +30,7 @@ sub polygon_area_in_km {
 sub plot_poly {
     my ($p, $s) = @_;
     my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$p}; 
-    return sprintf "p:=%s; draw p; draw \"%s\" infont \"phvr8r\" shifted center p;", $path, $s;
+    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[blue,white]; draw p;  ", $path, $s;
 }
 
 
