@@ -14,7 +14,7 @@ For each series there are (currently) two files
   -- the sheet title
   -- the current ISBN number for maps that have them
 
-- sheet-polygons which has
+- polygons which has
   -- index numbers which match the catalogue)
   -- sheet number (matching the catalogue)
   -- flag - an integer to show the status of the entry
@@ -39,21 +39,22 @@ such as Sheet 152, whose SW corner is at SP 530 300 is recorded as
 
     (((453000 230000, 493000 230000, 493000 270000, 453000 270000, 453000 230000)))
 
-If the sheet boundary is more complicated that a square record a coordinate
-pair at each corner.  Include extensions - where the coloured printing spills
+If the sheet boundary is more complicated than a square record a coordinate
+pair at each corner.  Include extensions - ie where the coloured printing spills
 over the neat edge - as part of the main polygon in the appropriate place,
 always moving anticlockwise.  Extensions don’t have to be rectilinear but they
 are made up of straight lines.  Ignore extensions for administrative boundaries
-and labels.  If in doubt use common sense.  
+and labels.  If in doubt, use common sense.  
 
 If an inset is drawn on the map sheet with its own grid margin then record it
-as a separate polygon following the WKT format.
+as a separate polygon following the WKT format, even if it overlaps the main sheet.
 
-The first (and last) pair should always be the SW corner, if an extension
-affects the SW corner, start and end with the regular corner pair even if they
-are technically redundant.  This allows me to find the SW corners currently
-defined for the Landranger maps easily.  In the Landranger series this only affect sheet 162.
-
+On OS Landranger maps,  the first (and last) pair should always be the SW
+corner, if an extension affects the SW corner, start and end with the regular
+corner pair even if they are technically redundant.  This allows me to find the
+SW corners currently defined for the Landranger maps easily.  In the Landranger
+series this only affect sheet 162.  In other series, start somewhere near the
+SW and go anticlockwise.
 
 
 
