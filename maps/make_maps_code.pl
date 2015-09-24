@@ -32,12 +32,14 @@ sub polygon_bbox {
 
 sub plot_poly {
     my ($p, $s) = @_;
+    my $color = $s =~ m{\AOL}osxi ? 'red' : 'blue';
     my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$p}; 
-    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[blue,white]; draw p;  ", $path, $s;
+    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[%s,white]; draw p;  ", 
+                    $path, $s, $color;
 }
 
 my @maps;
-my $Minimum_sheet_size = 400; # Anything smaller than 400km^2 is an inset
+my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
 
 LINE:
 while (<>) {
@@ -83,6 +85,7 @@ while (<>) {
     for my $p (@polylist) {
         my $a = polygon_area_in_km($p);
         if ($a < $Minimum_sheet_size) {
+            print "$label --> Inset area: $a\n";
             push @insets, $p;
         }
         else {
