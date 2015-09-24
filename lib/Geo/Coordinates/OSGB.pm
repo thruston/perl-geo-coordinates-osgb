@@ -4,14 +4,14 @@ use strict;
 use warnings;
 use Carp;
 
-our $VERSION = '2.08';
+our $VERSION = '2.09';
 our %EXPORT_TAGS = (
     all => [ qw( ll_to_grid grid_to_ll
                  shift_ll_into_WGS84 shift_ll_from_WGS84
                  parse_ISO_ll format_ll_trad format_ll_ISO
                  parse_grid parse_trad_grid parse_GPS_grid parse_landranger_grid
                  format_grid_trad format_grid_GPS format_grid_landranger
-                 random_grid
+                 random_grid format_grid_map
            )]
     );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
@@ -524,6 +524,55 @@ sub format_grid_landranger {
     my $phrase = join ', ', @sheets[0..($#sheets-1)], "and $sheets[-1]";
     return sprintf '%s %03d %03d on OS Sheets %s', $sq, $e, $n, $phrase;
 
+}
+
+use Geo::Coordinates::Maps qw{@maps};
+
+sub format_grid_map { 
+    my ($e, $n) = @_;
+    my @sheets = ();
+    for my $m (@maps) {
+        if ($m->{bbox}->[0][0] <= $e && $e < $m->{bbox}->[1][0]
+         && $m->{bbox}->[0][1] <= $n && $n < $m->{bbox}->[1][1]) {
+            my $w = _winding_number($e, $n, $m->{polygon});
+            if ($w != 0) { 
+                push @sheets, sprintf '%s:%s', $m->{series}, $m->{label};
+            }
+        }
+    }
+    my $sq;
+    ($sq, $e, $n) = format_grid_trad($e,$n);
+
+    return ($sq, $e, $n, @sheets) if wantarray;
+
+    if (!@sheets )    { return sprintf '%s %03d %03d is not on any of our maps', $sq, $e, $n; }
+    else              { return sprintf '%s %03d %03d on %s', $sq, $e, $n, join ', ', @sheets; }
+    
+}
+
+# is $pt left of $a--$b?
+sub _is_left {
+    my ($x, $y, $a, $b) = @_;
+    return ( ($b->[0] - $a->[0]) * ($y - $a->[1]) - ($x - $a->[0]) * ($b->[1] - $a->[1]) );
+}
+
+# adapted from http://geomalgorithms.com/a03-_inclusion.html
+sub _winding_number {
+    my ($x, $y, $poly) = @_;
+    my $w = 0;
+    for (my $i=0; $i < $#$poly; $i++ ) {
+        if ( $poly->[$i][1] <= $y ) {
+            if ($poly->[$i+1][1]  > $y && _is_left($x, $y, $poly->[$i], $poly->[$i+1]) > 0 ) {
+                $w++;
+            }
+        }
+        else {
+            if ($poly->[$i+1][1] <= $y && _is_left($x, $y, $poly->[$i], $poly->[$i+1]) < 0 ) {
+                $w--;
+            }
+        }
+    }
+    return $w;
 }
 
 my $SHORT_GRID_REF = qr{ \A ([GHJMNORST][A-Z]) \s? (\d{1,3}) \D? (\d{1,3}) \Z }smiox;

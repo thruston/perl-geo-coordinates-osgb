@@ -30,13 +30,6 @@ sub polygon_bbox {
     return [ [$llx, $lly], [$urx, $ury] ] ;
 }
 
-sub plot_poly {
-    my ($p, $s) = @_;
-    my $color = $s =~ m{\AOL}osxi ? 'red' : 'blue';
-    my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$p}; 
-    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[%s,white]; draw p;  ", 
-                    $path, $s, $color;
-}
 
 my @maps;
 my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
@@ -150,13 +143,26 @@ while (<>) {
 #    }
 #}
 
-open(my $plotter, '>', 'plot.mp');
-print $plotter ' prologues := 3; outputtemplate := "%j%c.eps"; beginfig(1); path p;', "\n";
+open(my $perl, '>', '../lib/Geo/Coordinates/Maps.pm');
+print $perl <<'END_PREAMBLE';
+package Geo::Coordinates::Maps;
+use base qw(Exporter);
+use strict;
+use warnings;
+our $VERSION = '2.09';
+our @EXPORT_OK = qw(@maps);
+our @maps;
+END_PREAMBLE
 
 for my $m (@maps) {
-        print $m->{series}, ":", $m->{label}, "\n";
-        print $plotter plot_poly($m->{polygon}, $m->{label}), "\n"; 
-    }
-#}
-print $plotter "endfig;end.\n";
-close $plotter;
+    print $m->{series}, ":", $m->{label}, "\n";
+    print $perl 'push @maps, { ';
+    print $perl 'series => "', $m->{series}, '", ';
+    printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
+    print $perl 'label => "', $m->{label},  '", ';
+    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{polygon}}), ']';
+    print $perl " };\n";
+}
+
+print $perl "1;\n";
+close $perl;
