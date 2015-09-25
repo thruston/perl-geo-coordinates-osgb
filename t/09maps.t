@@ -3,7 +3,7 @@
 
 use Geo::Coordinates::OSGB qw/parse_grid format_grid_map/;
 
-use Test::Simple tests => 7;
+use Test::Simple tests => 10;
 
 my @s = format_grid_map(parse_grid("TQ 102 606"));
 my $s = "@s";
@@ -31,3 +31,8 @@ ok($s eq 'SE 321 059 on A:110, A:111, B:OL1E, C:102', $s);
 # 3km S of the above (which is not on the extension area around J37)
 $s = format_grid_map(432100, 403900);
 ok($s eq 'SE 321 039 on A:110, A:111, C:102', $s);
+
+use Geo::Coordinates::British_Maps qw/%name_for_map_series/;
+ok($name_for_map_series{'A'} eq 'OS Landranger', "Series A == OS Landranger");
+ok($name_for_map_series{'B'} eq 'OS Explorer',   "Series B == OS Explorer");
+ok($name_for_map_series{'C'} eq 'OS One-Inch 7th series',   "Series C == OS One-Inch");

@@ -526,7 +526,7 @@ sub format_grid_landranger {
 
 }
 
-use Geo::Coordinates::Maps qw{@maps};
+use Geo::Coordinates::British_Maps qw{@maps};
 
 sub format_grid_map { 
     my ($e, $n) = @_;

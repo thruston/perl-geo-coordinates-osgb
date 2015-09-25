@@ -143,15 +143,20 @@ while (<>) {
 #    }
 #}
 
-open(my $perl, '>', '../lib/Geo/Coordinates/Maps.pm');
+open(my $perl, '>', '../lib/Geo/Coordinates/British_Maps.pm');
 print $perl <<'END_PREAMBLE';
-package Geo::Coordinates::Maps;
+package Geo::Coordinates::British_Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
 our $VERSION = '2.09';
-our @EXPORT_OK = qw(@maps);
+our @EXPORT_OK = qw(@maps %name_for_map_series);
 our @maps;
+our %name_for_map_series = ( 
+  A => 'OS Landranger', 
+  B => 'OS Explorer',
+  C => 'OS One-Inch 7th series',
+);
 END_PREAMBLE
 
 for my $m (@maps) {

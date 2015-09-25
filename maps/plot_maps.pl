@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Geo::Coordinates::Maps qw(@maps);
+use Geo::Coordinates::British_Maps qw(@maps);
 
 sub plot_poly {
     my ($p, $s) = @_;
@@ -10,12 +10,18 @@ sub plot_poly {
                     $path, $s, $color;
 }
 
+my $series_wanted = (@ARGV > 0) ? $ARGV[0] : 'A';
+
+
 open(my $plotter, '>', 'plot.mp');
 print $plotter ' prologues := 3; outputtemplate := "%j%c.eps"; beginfig(1); path p;', "\n";
 
 for my $m (@maps) {
+    my $p = index($series_wanted, $m->{series});
+    next if $p < 0;
     print $plotter plot_poly($m->{polygon}, $m->{label}), "\n"; 
 }
 
 print $plotter "endfig;end.\n";
 close $plotter;
+system('mpost', 'plot.mp');
