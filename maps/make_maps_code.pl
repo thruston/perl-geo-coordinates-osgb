@@ -41,6 +41,8 @@ while (<>) {
 
     next LINE if $mpg eq 'EMPTY';
 
+    croak "Missing flag" if $flag =~ m{\A\(}iosx;
+
     my $series = substr($nn,0,1);
 
     # split the MULTIPOLYGON string up 1 char at a time using the reverse and chop trick
@@ -63,8 +65,16 @@ while (<>) {
     # split each POLYGON string into an array of coordinate pairs
     for my $p (@polylist) {
         $p = [ map { [ split ' ' ] } split ',', $p ];
+        # check each pair has two and only two coordinates and that the polygon is closed
+        for my $pt (@$p) {
+            print join ' ', @$pt, "\n";
+            croak "Broken pair at line $. in $ARGV" unless 2==@$pt;
+        }
+        croak "Unclosed polygon" unless $p->[0][0] == $p->[-1][0]
+                                     && $p->[0][1] == $p->[-1][1];
     }
 
+    
     # split the polygons up into insets and sides 
     # Often there will be only 1 side and 0 insets, so special case that first
     if (1==@polylist) {
