@@ -67,13 +67,14 @@ while (<>) {
         $p = [ map { [ split ' ' ] } split ',', $p ];
         # check each pair has two and only two coordinates and that the polygon is closed
         for my $pt (@$p) {
-            print join ' ', @$pt, "\n";
-            croak "Broken pair at line $. in $ARGV" unless 2==@$pt;
+            if (2!=@$pt) {
+               my $err = "@$pt"; 
+               croak "Broken pair $err at line $. in $ARGV";;
+           } 
         }
         croak "Unclosed polygon" unless $p->[0][0] == $p->[-1][0]
                                      && $p->[0][1] == $p->[-1][1];
     }
-
     
     # split the polygons up into insets and sides 
     # Often there will be only 1 side and 0 insets, so special case that first
