@@ -10,7 +10,7 @@ my $s = "@s";
 ok($s eq 'TQ 102 606 A:176 A:187 B:161 C:170', $s);
 
 $s = format_grid_map(parse_grid("SP 516 066"));
-ok($s eq 'SP 516 066 on A:164, C:158', $s);
+ok($s eq 'SP 516 066 on A:164, B:180E, C:158', $s);
 
 $s = format_grid_map(parse_grid("SU 029 269"));
 ok($s eq 'SU 029 269 on A:184, B:118N, B:130S, C:167', $s);
