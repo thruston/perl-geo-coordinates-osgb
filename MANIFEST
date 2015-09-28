@@ -4,7 +4,7 @@ Changes
 Makefile.PL
 lib/Geo/Coordinates/OSGB.pm
 lib/Geo/Coordinates/OSTN02.pm
-lib/Geo/Coordinates/Maps.pm
+lib/Geo/Coordinates/British-Maps.pm
 examples/bng_to_ll.pl
 examples/ll_to_bng.pl
 examples/zero-points.pl

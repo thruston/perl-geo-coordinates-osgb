@@ -1140,15 +1140,16 @@ devices can only ever produce an approximation of an OS grid reference, no
 matter what level of accuracy they may display.  The reasons for this are
 discussed below in the section on L<Theory>.
 
-=item format_grid_landranger(e,n)
+=item format_grid_map(e,n)
 
-This routine does the same as C<format_grid_trad>, but it appends the number of
-the relevant OS Landranger 1:50,000 scale map to the traditional grid
-reference.  Note that there may be several or no sheets returned.  This is
-because many (most) of the Landranger sheets overlap, and many other valid grid
-references are not on any of the sheets (because they are in the sea or a
-remote island.  This module does not yet cope with the detached insets on some
-sheets.
+This routine returns the grid reference formatted in the same way as
+C<format_grid_trad>, but it also appends a list of maps on which the point
+appears.  Note that the list will be empty if the grid point does not appear on
+any of the defined maps.  This can happen with points in the sea, or in other
+areas not covered by the any of the British OS maps (such as Northern Ireland
+or the Channel Islands).  In most cases the list will contain more than one map
+-- this is because (a) there are several series of maps defined and (b) many of
+the sheets in each series overlap at the edges.
 
 In a list context you will get back a list like this:  (square, easting,
 northing, sheet) or (square, easting, northing, sheet1, sheet2) etc.  There
