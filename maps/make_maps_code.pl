@@ -34,112 +34,123 @@ sub polygon_bbox {
 my @maps;
 my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
 
-LINE:
-while (<>) {
-    my ($nn, $label, $flag, $mpg) = split ' ', $_, 4;
-    $mpg =~ s/\s*$//;
+my @polygon_files = (
+    'polygons-os-landranger.txt',
+    'polygons-os-explorer.txt',
+    'polygons-os-one-inch.txt',
+    'polygons-bmm.txt',
+);
 
-    next LINE if $mpg eq 'EMPTY';
+for my $f (@polygon_files) {
+    open my $fh, '<', $f;
+    LINE:
+    while (<$fh>) {
+        my ($nn, $label, $flag, $mpg) = split ' ', $_, 4;
+        $mpg =~ s/\s*$//;
 
-    croak "Missing flag" if $flag =~ m{\A\(}iosx;
+        next LINE if $mpg eq 'EMPTY';
 
-    my $series = substr($nn,0,1);
+        croak "Missing flag" if $flag =~ m{\A\(}iosx;
 
-    # split the MULTIPOLYGON string up 1 char at a time using the reverse and chop trick
-    my $nest = 0;
-    my @polylist;
-    my $p=0;
-    my $s = reverse $mpg;
-    while (length $s) {
-        my $c = chop $s;
-        if ($nest==1 && $c eq ',') {
-           $p++;
-           next;
+        my $series = substr($nn,0,1);
+
+        # split the MULTIPOLYGON string up 1 char at a time using the reverse and chop trick
+        my $nest = 0;
+        my @polylist;
+        my $p=0;
+        my $s = reverse $mpg;
+        while (length $s) {
+            my $c = chop $s;
+            if ($nest==1 && $c eq ',') {
+               $p++;
+               next;
+            }
+            if    ($c eq '(') { $nest++ }
+            elsif ($c eq ')') { $nest-- }
+            else {
+                $polylist[$p] .= $c;
+            }
         }
-        if    ($c eq '(') { $nest++ }
-        elsif ($c eq ')') { $nest-- }
+        # split each POLYGON string into an array of coordinate pairs
+        for my $p (@polylist) {
+            $p = [ map { [ split ' ' ] } split ',', $p ];
+            # check each pair has two and only two coordinates and that the polygon is closed
+            for my $pt (@$p) {
+                if (2!=@$pt) {
+                   my $err = "@$pt"; 
+                   croak "Broken pair $err at line $. in $ARGV";;
+               } 
+            }
+            croak "Unclosed polygon" unless $p->[0][0] == $p->[-1][0]
+                                         && $p->[0][1] == $p->[-1][1];
+        }
+        
+        # split the polygons up into insets and sides 
+        # Often there will be only 1 side and 0 insets, so special case that first
+        if (1==@polylist) {
+            my $b = polygon_bbox($polylist[0]);
+            push @maps, { series => $series, label => $label, bbox => $b, polygon => $polylist[0] };
+            next LINE;
+        }
+
+        my @insets;
+        my @sides;
+        for my $p (@polylist) {
+            my $a = polygon_area_in_km($p);
+            if ($a < $Minimum_sheet_size) {
+                #print "$label --> Inset area: $a\n";
+                push @insets, $p;
+            }
+            else {
+                push @sides, $p;
+            }
+        }
+
+        # sort out the sides
+        if (1==@sides) {
+            my $b = polygon_bbox($sides[0]);
+            push @maps, { series => $series, label => $label, bbox => $b, polygon => $sides[0] };
+        }
+        elsif (2==@sides) {
+            my $b1 = polygon_bbox($sides[0]);
+            my $b2 = polygon_bbox($sides[1]);
+            my $center_E1 = $b1->[0][0] + ($b1->[1][0]-$b1->[0][0])/2;
+            my $center_E2 = $b2->[0][0] + ($b2->[1][0]-$b2->[0][0])/2;
+            my $center_N1 = $b1->[0][1] + ($b1->[1][1]-$b1->[0][1])/2;
+            my $center_N2 = $b2->[0][1] + ($b2->[1][1]-$b2->[0][1])/2;
+            my $E_diff = $center_E1 - $center_E2;
+            my $N_diff = $center_N1 - $center_N2;
+            my $label1 = my $label2 = $label;
+            if ( abs($E_diff) > abs($N_diff) ) {
+                $label1 .= $E_diff > 0 ? 'E' : 'W';
+                $label2 .= $E_diff > 0 ? 'W' : 'E';
+            }
+            else {
+                $label1 .= $N_diff > 0 ? 'N' : 'S';
+                $label2 .= $N_diff > 0 ? 'S' : 'N';
+            }
+            push @maps, { series => $series, label => $label1, bbox => $b1, polygon => $sides[0] };
+            push @maps, { series => $series, label => $label2, bbox => $b2, polygon => $sides[1] };
+        }
         else {
-            $polylist[$p] .= $c;
+            croak "More than two sides to sheet $label\n";
         }
-    }
-    # split each POLYGON string into an array of coordinate pairs
-    for my $p (@polylist) {
-        $p = [ map { [ split ' ' ] } split ',', $p ];
-        # check each pair has two and only two coordinates and that the polygon is closed
-        for my $pt (@$p) {
-            if (2!=@$pt) {
-               my $err = "@$pt"; 
-               croak "Broken pair $err at line $. in $ARGV";;
-           } 
-        }
-        croak "Unclosed polygon" unless $p->[0][0] == $p->[-1][0]
-                                     && $p->[0][1] == $p->[-1][1];
-    }
-    
-    # split the polygons up into insets and sides 
-    # Often there will be only 1 side and 0 insets, so special case that first
-    if (1==@polylist) {
-        my $b = polygon_bbox($polylist[0]);
-        push @maps, { series => $series, label => $label, bbox => $b, polygon => $polylist[0] };
-        next LINE;
-    }
 
-    my @insets;
-    my @sides;
-    for my $p (@polylist) {
-        my $a = polygon_area_in_km($p);
-        if ($a < $Minimum_sheet_size) {
-            print "$label --> Inset area: $a\n";
-            push @insets, $p;
+        # do the insets
+        if (1==@insets) {
+            my $b = polygon_bbox($insets[0]);
+            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $insets[0] };
         }
-        else {
-            push @sides, $p;
-        }
-    }
-
-    # sort out the sides
-    if (1==@sides) {
-        my $b = polygon_bbox($sides[0]);
-        push @maps, { series => $series, label => $label, bbox => $b, polygon => $sides[0] };
-    }
-    elsif (2==@sides) {
-        my $b1 = polygon_bbox($sides[0]);
-        my $b2 = polygon_bbox($sides[1]);
-        my $center_E1 = $b1->[0][0] + ($b1->[1][0]-$b1->[0][0])/2;
-        my $center_E2 = $b2->[0][0] + ($b2->[1][0]-$b2->[0][0])/2;
-        my $center_N1 = $b1->[0][1] + ($b1->[1][1]-$b1->[0][1])/2;
-        my $center_N2 = $b2->[0][1] + ($b2->[1][1]-$b2->[0][1])/2;
-        my $E_diff = $center_E1 - $center_E2;
-        my $N_diff = $center_N1 - $center_N2;
-        my $label1 = my $label2 = $label;
-        if ( abs($E_diff) > abs($N_diff) ) {
-            $label1 .= $E_diff > 0 ? 'E' : 'W';
-            $label2 .= $E_diff > 0 ? 'W' : 'E';
-        }
-        else {
-            $label1 .= $N_diff > 0 ? 'N' : 'S';
-            $label2 .= $N_diff > 0 ? 'S' : 'N';
-        }
-        push @maps, { series => $series, label => $label1, bbox => $b1, polygon => $sides[0] };
-        push @maps, { series => $series, label => $label2, bbox => $b2, polygon => $sides[1] };
-    }
-    else {
-        croak "More than two sides to sheet $label\n";
-    }
-
-    # do the insets
-    if (1==@insets) {
-        my $b = polygon_bbox($insets[0]);
-        push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $insets[0] };
-    }
-    elsif (1 < @insets ) {
-        my $inset_ordinal = 'A';
-        for my $p (@insets) {
-            my $b = polygon_bbox($p);
-            my $s = sprintf "%s Inset %s", $label, $inset_ordinal++;
-            push @maps, { series => $series, label => $s, bbox => $b, polygon => $p };
+        elsif (1 < @insets ) {
+            my $inset_ordinal = 'A';
+            for my $p (@insets) {
+                my $b = polygon_bbox($p);
+                my $s = sprintf "%s Inset %s", $label, $inset_ordinal++;
+                push @maps, { series => $series, label => $s, bbox => $b, polygon => $p };
+            }
         }
     }
+    close $fh;
 }
 
 #use Geo::Coordinates::OSGB 'parse_grid';
@@ -167,11 +178,12 @@ our %name_for_map_series = (
   A => 'OS Landranger', 
   B => 'OS Explorer',
   C => 'OS One-Inch 7th series',
+  H => 'Harvey British Mountain Map',
 );
 END_PREAMBLE
 
 for my $m (@maps) {
-    print $m->{series}, ":", $m->{label}, "\n";
+    #print $m->{series}, ":", $m->{label}, "\n";
     print $perl 'push @maps, { ';
     print $perl 'series => "', $m->{series}, '", ';
     printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
@@ -182,3 +194,4 @@ for my $m (@maps) {
 
 print $perl "1;\n";
 close $perl;
+warn sprintf "Wrote %d map sheet definitions to maps module\n", scalar @maps;

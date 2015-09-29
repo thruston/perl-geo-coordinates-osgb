@@ -6,8 +6,11 @@ sub plot_poly {
     my ($p, $s) = @_;
     my $color = $s =~ m{\AOL}osxi ? 'red' : 'blue';
     my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$p}; 
-    return sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[%s,white]; draw p;  ", 
+    my $out = $s =~ m{Inset}xios ?
+        sprintf "p:=%s; draw p;", $path : 
+        sprintf "p:=%s; label(\"%s\" infont \"phvr8r\" scaled 0.7, center p) withcolor .8[%s,white]; draw p;  ", 
                     $path, $s, $color;
+    return $out;
 }
 
 my $series_wanted = (@ARGV > 0) ? $ARGV[0] : 'A';
