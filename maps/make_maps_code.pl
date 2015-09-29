@@ -49,6 +49,8 @@ for my $f (@polygon_files) {
         $mpg =~ s/\s*$//;
 
         next LINE if $mpg eq 'EMPTY';
+        
+        next LINE if $flag eq '8';
 
         croak "Missing flag" if $flag =~ m{\A\(}iosx;
 
