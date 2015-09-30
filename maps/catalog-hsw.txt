@@ -1,0 +1,41 @@
+sw_anteallach       An Teallach                        
+sw_arans            Snowdonia Arans                    
+sw_arran            Arran                              
+sw_arrochar         Arrochar Alps                      
+sw_benavon          Ben Avon                           
+sw_benlawers        Ben Lawers                         
+sw_benledi          Ben Ledi                           
+sw_benlomond        Ben Lomond                         
+sw_bennevis         Ben Nevis Mamores and Grey Corries 
+sw_bentham          Yorkshire Dales Bentham            
+sw_benvenue         Ben Venue                          
+sw_breconeast       Brecon Beacons East                
+sw_breconwest       Brecon Beacons West                
+sw_cadair           Cadair Idris                       
+sw_cairngorm        Cairn Gorm                         
+sw_cheviot          Cheviot                            
+sw_crianlarich      Crianlarich                        
+sw_glencoe2         Glencoe                            
+sw_howgill          Howgill Fells                      
+sw_isleman          Isle of Man                        
+sw_kintail          Kintail                            
+sw_knoydart         Knoydart                           
+swxt_lakese         Lake District East                 
+swxt_lakesn         Lake District North                
+sw_lakesse          Lake District South East           
+sw_lakesw           Lake District West                 
+sw_lochnagar        Lochnagar                          
+sw_ochil            Ochil Hills                        
+sw_peaksc           Peak District Central              
+sw_peaksn           Peak District North                
+sw_peakss           Peak District South                
+sw_pentland         Pentland Hills                     
+sw_rhinogs          Snowdonia Rhinogs                  
+sw_rum              Rum, Eigg, Canna, Muck             
+sw_rum              Rum, Eigg, Canna, Muck             
+sw_rum              Rum, Eigg, Canna, Muck             
+sw_skyecuillin      Skye Cuillin                       
+sw_skyetrotternish  Skye Trotternish                   
+sw_snowdonianorth2  Snowdonia North                    
+sw_suilven          Suilven                            
+sw_torridon         Torridon                           

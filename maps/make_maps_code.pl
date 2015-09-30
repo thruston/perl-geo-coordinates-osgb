@@ -39,6 +39,7 @@ my @polygon_files = (
     'polygons-os-explorer.txt',
     'polygons-os-one-inch.txt',
     'polygons-bmm.txt',
+    'polygons-hsw.txt',
 );
 
 for my $f (@polygon_files) {
@@ -96,19 +97,31 @@ for my $f (@polygon_files) {
         }
 
         my @insets;
+        my @inset_areas;
         my @sides;
         for my $p (@polylist) {
             my $a = polygon_area_in_km($p);
             if ($a < $Minimum_sheet_size) {
                 #print "$label --> Inset area: $a\n";
-                push @insets, $p;
+                @insets = sort by_area @insets, { poly => $p, area => $a };
             }
             else {
                 push @sides, $p;
             }
         }
 
+        sub by_area {
+            $a->{area} <=> $b->{area}
+        }
+        
+
         # sort out the sides
+        # first check the sides array
+        # if there are insets but no sides, then promote the biggest inset to a side
+        if (0 < @insets && 0 == @sides) {
+            push @sides, map {$_->{poly}} shift @insets;
+        }
+
         if (1==@sides) {
             my $b = polygon_bbox($sides[0]);
             push @maps, { series => $series, label => $label, bbox => $b, polygon => $sides[0] };
@@ -135,17 +148,19 @@ for my $f (@polygon_files) {
             push @maps, { series => $series, label => $label2, bbox => $b2, polygon => $sides[1] };
         }
         else {
-            croak "More than two sides to sheet $label\n";
+            croak "More than two sides to sheet $label";
         }
 
         # do the insets
         if (1==@insets) {
-            my $b = polygon_bbox($insets[0]);
-            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $insets[0] };
+            my $p = $insets[0]->{poly};
+            my $b = polygon_bbox($p);
+            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $p };
         }
         elsif (1 < @insets ) {
             my $inset_ordinal = 'A';
-            for my $p (@insets) {
+            for my $i (@insets) {
+                my $p = $i->{poly};
                 my $b = polygon_bbox($p);
                 my $s = sprintf "%s Inset %s", $label, $inset_ordinal++;
                 push @maps, { series => $series, label => $s, bbox => $b, polygon => $p };
@@ -181,6 +196,7 @@ our %name_for_map_series = (
   B => 'OS Explorer',
   C => 'OS One-Inch 7th series',
   H => 'Harvey British Mountain Map',
+  J => 'Harvey Super Walker',
 );
 END_PREAMBLE
 
