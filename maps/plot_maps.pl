@@ -34,6 +34,16 @@ print $plotter "drawoptions(withpen pencircle scaled 0.2);\n";
 print $plotter 'for i=0 upto 12: draw (0,100i) -- (700,100i) withcolor .7 white; label.rt(decimal 100i, (700,100i)); label.lft(decimal 100i, (0,100i)); endfor' ,"\n";
 print $plotter 'for i=0 upto  7: draw (100i,0) -- (100i,1200) withcolor .7 white; endfor' ,"\n";
 
+use Geo::Coordinates::OSGB qw(format_grid_trad ll_to_grid);
+for my $x (0..6) {
+    for my $y (0..11) {
+        my ($sq, $e, $n) = format_grid_trad($x*100000,$y*100000);
+        print $plotter sprintf 'label("%s" infont "phvr8r" scaled 3, (%d,%d)) withcolor .9 white;', 
+                                      $sq, 50+$x*100, 50+$y*100;
+    }
+}
+
+
 print $plotter @draws;
 
 print $plotter "endfig;end.\n";
