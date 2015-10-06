@@ -3,9 +3,10 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 2.09 October 2015
 
     - Improved and generalized handling of maps to allow for multiple series, insets, and irregular boundaries
+    - New functions "format_grid_map" and "parse_map_grid" to replace Landranger functions
     - Complete insets and extensions to sheet boundaries for Landranger maps
-    - Added sheet boundaries for old One Inch 7th series maps
-    - Initial definitions of sheet boundaries for Explorer series of 1:25000 maps
+    - Complete sheet boundaries for old One Inch 7th series maps
+    - Complete sheet boundaries for Explorer series of 1:25000 maps
     - Reorganized distribution: 
       -- example scripts are in examples/
       -- map definitions are in maps/
