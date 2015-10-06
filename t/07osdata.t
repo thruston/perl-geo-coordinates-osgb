@@ -1,6 +1,6 @@
-#! perl -w
 # Toby Thurston --- 16 Apr 2009
 use strict;
+use warnings;
 
 # This test data is taken directly from the OS publications about OSTN02
 

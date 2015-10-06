@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Geo::Coordinates::British_Maps qw(@maps);
+use Geo::Coordinates::British_Maps qw(%maps);
 
 sub plot_poly {
     my ($path, $s) = @_;
@@ -21,12 +21,13 @@ print $plotter 'prologues := 3; outputtemplate := "%j%c.eps"; beginfig(1); defau
 
 my @fills;
 my @draws;
-for my $m (@maps) {
-    my $p = index($series_wanted, $m->{series});
+while (my ($k, $m) = each %maps) {
+    my ($series, $label) = split ':', $k;
+    my $p = index($series_wanted, $series);
     next if $p < 0;
     my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$m->{polygon}}; 
     push @fills, sprintf "fill %s..cycle withcolor ( 0.98, 0.906, 0.71 );\n", $path;
-    push @draws, plot_poly($path, $m->{label}); 
+    push @draws, plot_poly($path, $label); 
 }
 
 print $plotter @fills;

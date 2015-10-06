@@ -11,20 +11,20 @@ our %EXPORT_TAGS = (
                  parse_ISO_ll format_ll_trad format_ll_ISO
                  parse_grid parse_trad_grid parse_GPS_grid parse_landranger_grid
                  format_grid_trad format_grid_GPS format_grid_landranger
-                 random_grid format_grid_map
+                 random_grid format_grid_map parse_map_grid 
            )]
     );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
-use constant RAD => 0.0174532925199;
-use constant DAR => 57.2957795131;
+use constant RAD => 0.017453292519943295769236907684886127134428718885417;
+use constant DAR => 57.295779513082320876798154814105170332405472466564;
 
 use constant WGS84_MAJOR_AXIS => 6_378_137.000;
-use constant WGS84_MINOR_AXIS => 6_356_752.314_25;
+use constant WGS84_MINOR_AXIS => 6_356_752.3141;
 use constant WGS84_FLATTENING => 1 / 298.257223563;
 
 use constant OSGB_MAJOR_AXIS  => 6_377_563.396;
-use constant OSGB_MINOR_AXIS  => 6_356_256.910;
+use constant OSGB_MINOR_AXIS  => 6_356_256.909;
 
 # set defaults for Britain
 my %ellipsoid_shapes = (
@@ -75,21 +75,23 @@ sub ll_to_grid {
 
     my ($a,$b) = @{$ellipsoid_shapes{$shape}};
 
-    my $e2 = ($a**2-$b**2)/$a**2;
+    my $e2 = (1+$b/$a)*(1-$b/$a);
     my $n = ($a-$b)/($a+$b);
 
     my $phi = RAD * $lat;
     my $lam = RAD * $lon;
 
-    my $sp2  = sin($phi)**2;
+    my $cp = cos $phi; my $sp = sin $phi; 
+    my $sp2 = $sp*$sp;
+    my $tp  = $sp/$cp; # cos phi cannot be zero in GB
+    my $tp2 = $tp*$tp; 
+    my $tp4 = $tp2*$tp2;
+
     my $nu   = $a * CONVERGENCE_FACTOR * (1 - $e2 * $sp2 ) ** -0.5;
     my $rho  = $a * CONVERGENCE_FACTOR * (1 - $e2) * (1 - $e2 * $sp2 ) ** -1.5;
     my $eta2 = $nu/$rho - 1;
 
     my $M = _compute_big_m($phi, $b, $n);
-
-    my $cp = cos $phi ; my $sp = sin $phi; my $tp = $sp/$cp; # cos phi cannot be zero in GB
-    my $tp2 = $tp*$tp ; my $tp4 = $tp2*$tp2 ;
 
     my $I    = $M + ORIGIN_NORTHING;
     my $II   = $nu/2  * $sp * $cp;
@@ -127,7 +129,7 @@ sub grid_to_ll {
 
     my ($a,$b) = @{$ellipsoid_shapes{$shape}};
 
-    my $e2 = ($a**2-$b**2)/$a**2;
+    my $e2 = (1+$b/$a)*(1-$b/$a);
     my $n = ($a-$b)/($a+$b);
 
     my $dn = $N - ORIGIN_NORTHING;
@@ -136,18 +138,20 @@ sub grid_to_ll {
     $phi = ORIGIN_LATITUDE + $dn/($a * CONVERGENCE_FACTOR);
 
     my $M = _compute_big_m($phi, $b, $n);
-    while ($dn-$M >= 0.001) {
-       $phi = $phi + ($dn-$M)/($a * CONVERGENCE_FACTOR);
-       $M = _compute_big_m($phi, $b, $n);
+    while ($dn-$M >= 0.00001) {
+        $phi = $phi + ($dn-$M)/($a * CONVERGENCE_FACTOR);
+        $M = _compute_big_m($phi, $b, $n);
     }
 
-    my $sp = sin $phi; my $cp = cos $phi;
-    my $sp2  = $sp**2;
+    my $cp = cos $phi; my $sp = sin $phi; 
+    my $sp2 = $sp*$sp;
+    my $tp  = $sp/$cp; # cos phi cannot be zero in GB
+    my $tp2 = $tp*$tp; 
+    my $tp4 = $tp2*$tp2;
+
     my $nu   = $a * CONVERGENCE_FACTOR *             (1 - $e2 * $sp2 ) ** -0.5;
     my $rho  = $a * CONVERGENCE_FACTOR * (1 - $e2) * (1 - $e2 * $sp2 ) ** -1.5;
     my $eta2 = $nu/$rho - 1;
-
-    my $tp = $sp / $cp; my $tp2 = $tp*$tp ; my $tp4 = $tp2*$tp2 ;
 
     my $VII  = $tp /   (2*$rho*$nu);
     my $VIII = $tp /  (24*$rho*$nu**3) *  (5 +  3*$tp2 + $eta2 - 9*$tp2*$eta2);
@@ -526,28 +530,61 @@ sub format_grid_landranger {
 
 }
 
-use Geo::Coordinates::British_Maps qw{@maps};
+use Geo::Coordinates::British_Maps qw{%maps};
 
 sub format_grid_map { 
     my ($e, $n) = @_;
     my @sheets = ();
-    for my $m (@maps) {
+    while (my ($k,$m) = each %maps) {
         if ($m->{bbox}->[0][0] <= $e && $e < $m->{bbox}->[1][0]
          && $m->{bbox}->[0][1] <= $n && $n < $m->{bbox}->[1][1]) {
             my $w = _winding_number($e, $n, $m->{polygon});
             if ($w != 0) { 
-                push @sheets, sprintf '%s:%s', $m->{series}, $m->{label};
+                push @sheets, $k;
             }
         }
     }
     my $sq;
     ($sq, $e, $n) = format_grid_trad($e,$n);
+    @sheets = sort @sheets;
 
     return ($sq, $e, $n, @sheets) if wantarray;
 
     if (!@sheets )    { return sprintf '%s %03d %03d is not on any of our maps', $sq, $e, $n; }
     else              { return sprintf '%s %03d %03d on %s', $sq, $e, $n, join ', ', @sheets; }
     
+}
+
+sub parse_map_grid {
+    my ($sheet, $e, $n) = @_;
+
+    return if !defined wantarray;
+
+    if ( !defined $sheet )        { croak 'Missing sheet identifier'  }
+    if ( !defined $maps{$sheet} ) { croak "Unknown sheet identifier ($sheet)" }
+
+    my @ll = @{$maps{$sheet}->{bbox}[0]};
+
+    if ( !defined $e )          { return wantarray ? @ll : format_grid_trad(@ll) }
+    if ( !defined $n )          { $n = -1 }
+
+    SWITCH: {
+        if ( $e =~ m{\A (\d{3}) (\d{3}) \Z}x && $n == -1 ) { ($e, $n) = ($1*100, $2*100) ; last SWITCH }
+        if ( $e =~ m{\A\d{3}\Z}x && $n =~ m{\A\d{3}\Z}x )  { ($e, $n) = ($e*100, $n*100) ; last SWITCH }
+        if ( $e =~ m{\A\d{5}\Z}x && $n =~ m{\A\d{5}\Z}x )  { ($e, $n) = ($e*1,   $n*1  ) ; last SWITCH }
+        croak "I can't parse a grid reference from this: @_";
+    }
+
+    $e = $ll[0] + ($e-$ll[0]) % SQUARE;
+    $n = $ll[1] + ($n-$ll[1]) % SQUARE;
+
+    my $w = _winding_number($e, $n, $maps{$sheet}->{polygon});
+
+    if ($w == 0) {
+        croak "Grid reference ($e,$n) is not on sheet $sheet";
+    }
+
+    return ($e, $n);
 }
 
 # is $pt left of $a--$b?
@@ -592,6 +629,10 @@ sub parse_grid {
     if ( $s =~ m{\A \d{1,3} \Z}xsm && $s < 205 ) {  # just a landranger sheet
         return parse_landranger_grid($s)
     }
+    if ( $s =~ m{\A (\d+(?:\.\d+)?) \s+ (\d+(?:\.\d+)?) \Z}xsmio ) { # eee nnn
+        return ($1, $2)
+    }
+
     croak "$s <-- this does not match my grid ref patterns";
 }
 
@@ -960,14 +1001,15 @@ or some other Internet based tool, you will need to do two transformations:
 first translate your grid ref into OSGB lat/lon; then nudge the result into
 WGS84.  Routines are provided to do both of these operations, but they are only
 approximate.  The inaccuracy of the approximation varies according to where you
-are in the country but may be as much as several metres in some areas.
+are in the country but may be as much as 5 metres in some areas.  See the note on accuracy 
+below for more details.
 
 To get more accurate results you need to combine this module with its companion
 L<Geo::Coordinates::OSTN02> which implements the transformation that now
 defines the relationship between GPS survey data based on WGS84 and the British
 National Grid.  Using this module you should be able to get results that are
-accurate to within a few centimetres, but it is slightly slower and requires
-more memory to run.
+accurate to within a few millimetres, but it is slightly slower and requires
+more memory to run.  
 
 Note that the OSGB (and therefore this module) does not cover the whole of the
 British Isles, nor even the whole of the UK, in particular it covers neither
@@ -1002,7 +1044,7 @@ The module is implemented purely in Perl, and should run on any Perl platform.
 In this description `OS' means `the Ordnance Survey of Great Britain': the
 British government agency that produces the standard maps of England, Wales,
 and Scotland.  Any mention of `sheets' or `maps' refers to one or more of the
-204 sheets in the 1:50,000 scale `Landranger' series of OS maps.
+map sheets defined in the accompanying maps module.
 
 This code is fine tuned to the British national grid system.  You could use it
 elsewhere but you would need to adapt it.  Some starting points for doing this
@@ -1021,7 +1063,7 @@ module:
     parse_grid
     parse_trad_grid             format_grid_trad
     parse_GPS_grid              format_grid_GPS
-    parse_landranger_grid       format_grid_landranger
+    parse_map_grid              format_grid_map
 
     random_grid
 
@@ -1074,7 +1116,7 @@ described below.  Like this.
 
     $gridref = format_grid_trad(ll_to_grid(51.5,-0.0833));
     $gridref = format_grid_GPS(ll_to_grid(51.5,-0.0833));
-    $gridref = format_grid_landranger(ll_to_grid(51.5,-0.0833));
+    $gridref = format_grid_map(ll_to_grid(51.5,-0.0833));
 
 However if you call C<ll_to_grid> in a scalar context, it will
 automatically call C<format_grid_trad> for you.
@@ -1152,17 +1194,20 @@ or the Channel Islands).  In most cases the list will contain more than one map
 the sheets in each series overlap at the edges.
 
 In a list context you will get back a list like this:  (square, easting,
-northing, sheet) or (square, easting, northing, sheet1, sheet2) etc.  There
-are a few places where three sheets overlap, and one corner of Herefordshire
-which appears on four maps (sheets 137, 138, 148, and 149).  If the GR is not
-on any sheet, then the list of sheets will be empty.
+northing, sheet) or (square, easting, northing, sheet1, sheet2) etc.  There are
+a few places where three sheets overlap, and one corner of Herefordshire which
+appears on four Landranger maps (sheets 137, 138, 148, and 149).  If the GR is
+not on any sheet, then the list of sheets will be empty.
 
-In a scalar context you will get back the same information in a helpful
-string form like this "NN 241 738 on OS Sheet 44".  Note that the easting and
-northing will have been truncated to the normal hectometre three
-digit form.  The idea is that you'll use this form for people who might actually
-want to look up the grid reference on the given map sheet, and the traditional
-GR form is quite enough accuracy for that purpose.
+In a scalar context you will get back the same information in a helpful string
+form like this "NN 241 738 on A:41, B:392, C:47".  Note that the easting and
+northing will have been truncated to the normal hectometre three digit form.
+The idea is that you'll use this form for people who might actually want to
+look up the grid reference on the given map sheet, and the traditional GR form
+is quite enough accuracy for that purpose.
+
+See the section below on L<Maps> for more details, including the series of maps
+that are included.
 
 =item parse_trad_grid(grid_ref)
 
@@ -1201,7 +1246,7 @@ outside the formal margin).
 
 Attempts to match a grid reference some form or other in the input string
 and will then call the appropriate grid parsing routine from those defined
-above.  In particular it will parse strings in the form C<'176-345210'>
+above.  In particular it will parse strings in the form C<'176/345210'>
 meaning grid ref 345 210 on sheet 176, as well as C<'TQ345210'> and C<'TQ
 34500 21000'> etc.  You can in fact always use "parse_grid" instead of the more
 specific routines unless you need to be picky about the input.
@@ -1315,6 +1360,42 @@ c<format_grid> routines.
 
 =back
 
+=head1 MAPS
+
+The series of maps currently defined include: A - OS Landranger maps at 1:50000
+scale; B - OS Explorer maps at 1:25000; and C - the old OS One-Inch maps at
+1:63360.  Landranger sheet 47 appears as "A:47" and Explorer sheet 161 as
+"B:161" and so on.  As of 2015, the Explorer series of incorporates the Outdoor
+Leisure maps, so (for example) the Outdoor Leisure 1 sheet, appears as "B:OL1".
+
+Thanks to the marketing department at the OS and their ongoing re-branding exercise
+several Explorer sheets have been "promoted" to Outdoor Leisure status. 
+So (for example) Explorer sheet 364 has recently become "Explorer sheet Outdoor Leisure 39".
+Maps like this are simply listed under both names, so 'B:364' and 'B:OL39' refer 
+to the same sheet, and they will both appear in the list of sheets.
+
+Many of the Explorer sheets are printed on both sides.  In these cases each
+side is treated as a separate sheet and distinguished with suffixes.  The pair
+of suffixes used for a map will either be N and S, or E and W.  So for example
+there is no Explorer sheet 'B:271', but you will find sheets 'B:271N' and
+'B:271S'.  The suffixes are determined automatically from the layout of the
+sides, so in a very few cases it might not match what is printed on the sheet
+but it should still be obvious which side is which.
+
+Several sheets also have insets, for islands, like Lundy or The Scillies, or
+for promontaries like Selsey Bill or Spurn Head.  Like the sides, these insets
+are also treated as additional sheets (albeit rather smaller).  They are named
+with the suffix " Inset", so Spurn Head is on an inset on Explorer sheet 292
+and this is labelled "B:292 Inset".  Where there is more than one inset on a
+sheet, they are sorted in descending order of size and labelled "Inset A",
+"Inset B" etc.  On some sheets the insets overlap the area of the main sheet, but 
+they are still treated as separate map sheets.  
+
+Some maps have marginal extensions to include local features - these are simply included
+in the definition of the main sheets.  There are, therefore, many sheets that are not
+regular rectangles.
+
+
 
 =head1 THEORY
 
@@ -1335,7 +1416,7 @@ local area of the earth.   There are other modules that already do this that
 may be more suitable (which are referenced in the L<See Also> section), but
 the key parameters are all defined at the top of the module.
 
-    $ellipsoid_shapes{OSGB36} = [ 6377563.396,  6356256.910  ];
+    $ellipsoid_shapes{OSGB36} = [ 6377563.396,  6356256.909  ];
     use constant ORIGIN_LONGITUDE   => RAD * -2;  # lon of grid origin
     use constant ORIGIN_LATITUDE    => RAD * 49;  # lat of grid origin
     use constant ORIGIN_EASTING     =>  400000;   # Easting for origin
@@ -1545,6 +1626,37 @@ The coverage of OSTN02 is limited to about 2km beyond the shore line, of the
 British mainland.  This means that some parts of the Landranger map series are
 outside the coverage, but only where they extend far out to sea.
 
+=head2 Accuracy and precision
+
+First some sizes.  In the British Isles the distance along a meridian between
+two points that are one degree of latitude apart is about 110 km or just under
+70 miles. This is the distance as the crow flies from, say, Swindon to Walsall.
+So a tenth of a degree is about 11 km or 7 miles, a hundredth is just over 1km,
+0.001 is about 110m, 0.0001 about 11m and 0.00001 just over 1 m.  If you think
+in minutes, and seconds, then one minute is about 1850 m (and it's no
+coincidence that this happens to be approximately the same as 1 nautical mile
+since it was originally defined to be 1 minute of arc of the circumference of
+the globe).  One second is a bit over 30m, 0.1 seconds is about 3 m, and 0.0001
+second is about 3mm.
+
+Degrees of latitude get very slightly longer as you go further north but not by
+much.  In contrast degrees of longitude, which represent the same length on the
+ground as latitude at the equator, get significantly smaller in northern
+latitudes.  In southern England one degree of latitude represents about 70 km
+or 44 miles, in northern Scotland it's less than 60 km or about 35 miles.
+Scaling everything down means that the fifth decimal place of a degree of
+longitude represents about 60-70cm on the ground.
+
+The transformations produced by this module between latitude and longitude
+given in the OSGB36 model and OS national grid references are exact to the
+nearest millimetre.  Unfortunately this is not the case if latitude and
+longitude are given or desired in the WGS84 model.  Using the quick methods
+"shift_ll_into_WGS84" and "shift_ll_from_WGS84", the transformations are
+correct to the nearest 5 m -- although in some areas of the grid, you will get
+slightly better results than this.  Using the OSTN02 methods, the
+transformations between OSGB36 and WGS84 are correct to the nearest 25 to 30
+cm.
+
 
 =head1 EXAMPLES
 
@@ -1606,21 +1718,23 @@ point of false origin.  You'll notice it most if you are working with grid
 references from the Shetland Islands, where the round trip error may be as much as 10 metres.
 If you need more accurate conversions use the OSTN02 routines.
 
-The C<format_grid_landranger()> does not take account of inset areas on the
-sheets.  So if you feed it a reference for the Scilly Isles, it will tell you
-that the reference is not on any Landranger sheet, whereas in fact the
-Scilly Isles are on an inset in the SW corner of Sheet 203.  There is
-nothing in the design that prevents me adding the insets, they just need to
-be added as extra sheets with names like "Sheet 2003 Inset 1" with their own
-reference points and special sheet sizes.  Collecting the data is another
-matter.
+The valid area of coverage of the OSGB routines is more or less the same as
+that of the Landranger series of maps.  The coverage of the OSTN02 routines is
+slightly smaller, because the model is not defined by the OS for points beyond
+about 2km from the shore.  This is not a problem if you are working with
+references from on land but might surprise you if you are working with the
+coordinates (for example) of the corners of some map sheets on the coast.
 
-The coveraage of the OSGB routines is more or less the same as the Landranger
-series of maps.  The coverage of the OSTN02 routines is slightly smaller, as
-the model is not defined by the OS for points beyond about 2km from the shore.
-This is not a problem if you are working with reference from onland but might
-surprise you if you are working with the coordinates (for example) of the
-corners of any Landranger sheet on the coast.
+The design of the conversion routines deliberately forces the user to be aware
+of the difference between the OSGB36 and the WGS84 geoid models.  This probably
+leads to some confusion.  The provision of alternative methods to shift between
+the two geoids also contributes some confusion.  Now that processor speeds are
+so much faster than when this module was first designed, it would probably make
+sense only to provide the more accurate method, since it is no longer significantly
+slower than the quick approximation.
+
+The design of the calling interface for most of the routines is chaotic.
+Future versions will support named parameters and other improvements.
 
 Not enough testing has been done.  I am always grateful for the feedback I
 get from users, but especially for problem reports that help me to make this

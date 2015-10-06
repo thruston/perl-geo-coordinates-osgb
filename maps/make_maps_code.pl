@@ -38,8 +38,6 @@ my @polygon_files = (
     'polygons-os-landranger.txt',
     'polygons-os-explorer.txt',
     'polygons-os-one-inch.txt',
-    'polygons-bmm.txt',
-    'polygons-hsw.txt',
 );
 
 for my $f (@polygon_files) {
@@ -111,7 +109,7 @@ for my $f (@polygon_files) {
         }
 
         sub by_area {
-            $a->{area} <=> $b->{area}
+            $b->{area} <=> $a->{area}
         }
         
 
@@ -170,7 +168,7 @@ for my $f (@polygon_files) {
     close $fh;
 }
 
-#use Geo::Coordinates::OSGB 'parse_grid';
+use Geo::Coordinates::OSGB 'format_grid_GPS';
 #
 #my ($e, $n) = parse_grid('NR 640 440');
 #
@@ -189,8 +187,8 @@ use base qw(Exporter);
 use strict;
 use warnings;
 our $VERSION = '2.09';
-our @EXPORT_OK = qw(@maps %name_for_map_series);
-our @maps;
+our @EXPORT_OK = qw(%maps %name_for_map_series);
+our %maps;
 our %name_for_map_series = ( 
   A => 'OS Landranger', 
   B => 'OS Explorer',
@@ -201,11 +199,9 @@ our %name_for_map_series = (
 END_PREAMBLE
 
 for my $m (@maps) {
-    #print $m->{series}, ":", $m->{label}, "\n";
-    print $perl 'push @maps, { ';
-    print $perl 'series => "', $m->{series}, '", ';
+    my $k = sprintf "%s:%s", $m->{series}, $m->{label};
+    print $perl '$maps{"', $k, '"} = { ';
     printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
-    print $perl 'label => "', $m->{label},  '", ';
     print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{polygon}}), ']';
     print $perl " };\n";
 }

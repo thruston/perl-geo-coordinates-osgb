@@ -19,7 +19,11 @@ if ( @ARGV == 0 ) {
 }
 
 my ($lat, $lon);
-if ( @ARGV == 1 ) {
+if ( $ARGV[0] eq 'test' ) {
+    $lat = 52 + ( 39 + 27.2531/60 )/60;
+    $lon =  1 + ( 43 +  4.5177/60 )/60;
+}
+elsif ( @ARGV == 1 ) {
     ($lat, $lon) = parse_ISO_ll($ARGV[0]);
 } else {
     ($lat, $lon) = @ARGV;
@@ -32,5 +36,5 @@ my ($e,  $n)  = ll_to_grid($lat, $lon);
 print "Your input: @ARGV\n";
 printf "is %s\n", scalar format_ll_trad($lat, $lon);
 
-printf "== %d %d from OSGB  (%s)\n", $e, $n, scalar format_grid_landranger($e, $n);
+printf "$e $n == %d %d from OSGB  (%s)\n", $e, $n, scalar format_grid_landranger($e, $n);
 printf "or %d %d from WGS84 (%s)\n", $ge, $gn, scalar format_grid_landranger($ge, $gn);
