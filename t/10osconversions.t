@@ -8,6 +8,7 @@ use Geo::Coordinates::OSGB   qw/grid_to_ll ll_to_grid format_grid_GPS/;
 
 use Test::Simple tests => 13*3;
 
+# some test data obtained by feeding random GRs to the online batch converter provided by the OS.
 my @test_data = ();
 
 push @test_data, { grid => [452788,520697], gps => [54.578747, -1.184859, 48.329], xyz => [3704143.232593,  -76611.478515, 5174384.798039], sq => "NZ5220"}; 

@@ -4,7 +4,7 @@ Changes
 Makefile.PL
 lib/Geo/Coordinates/OSGB.pm
 lib/Geo/Coordinates/OSTN02.pm
-lib/Geo/Coordinates/British-Maps.pm
+lib/Geo/Coordinates/British_Maps.pm
 examples/bng_to_ll.pl
 examples/ll_to_bng.pl
 examples/zero-points.pl
@@ -20,7 +20,6 @@ maps/plot_maps.pl
 maps/polygons-os-explorer.txt
 maps/polygons-os-landranger.txt
 maps/polygons-os-one-inch.txt
-t.pl
 t/01load.t
 t/02known.t
 t/03random.t
@@ -30,4 +29,5 @@ t/06transform.t
 t/07osdata.t
 t/08out_of_range.t
 t/09maps.t
+t/10osconversions.t
 MYMETA.yml
