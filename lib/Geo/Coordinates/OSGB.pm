@@ -72,6 +72,10 @@ sub ll_to_grid {
     if ($lat =~ $ISO_LL_PATTERN ) {
         ($lat, $lon, $alt) = parse_ISO_ll($lat);
     }
+    # correct reversed arguments 
+    elsif ($lat < $lon) { 
+        ($lat,$lon) = ($lon,$lat)
+    }
 
     my ($a,$b) = @{$ellipsoid_shapes{$shape}};
 
@@ -115,9 +119,14 @@ sub ll_to_grid {
 
 sub grid_to_ll {
 
-    my ($E, $N, $shape, @junk) = @_;
+    my ($E, $N, $alt, $shape, @junk) = @_;
 
     return if !defined wantarray;
+
+    if ( $alt && defined $ellipsoid_shapes{$alt} ) {
+        $shape = $alt;
+        $alt = undef;
+    }
 
     if ( ! ($shape && defined $ellipsoid_shapes{$shape}) ) {
         $shape = 'OSGB36';
@@ -1104,7 +1113,10 @@ trailing C</> may be omitted.
 
 If you have trouble remembering the order of the arguments, or the returned
 values, note that latitude comes before longitude in the alphabet too, as
-easting comes before northing.
+easting comes before northing.  However since valid latitudes for the OSGB are 
+in the range 49 to 61, and valid longitudes in the range -9 to 2, C<ll_to_grid> 
+accepts argument in either order.  If your longitude is larger than your latitude
+the values of the arguments will be swapped.
 
 The easting and northing will be returned as a whole number of metres from the
 point of origin of the British Grid (which is a point a little way to the
@@ -1718,12 +1730,19 @@ point of false origin.  You'll notice it most if you are working with grid
 references from the Shetland Islands, where the round trip error may be as much as 10 metres.
 If you need more accurate conversions use the OSTN02 routines.
 
-The valid area of coverage of the OSGB routines is more or less the same as
-that of the Landranger series of maps.  The coverage of the OSTN02 routines is
-slightly smaller, because the model is not defined by the OS for points beyond
-about 2km from the shore.  This is not a problem if you are working with
-references from on land but might surprise you if you are working with the
-coordinates (for example) of the corners of some map sheets on the coast.
+In the interests of performance, there's no range checking done on the arguments
+to the conversion routines, but the results are more or less meaningless outside 
+the area covered by the Landranger series of maps.  This runs from the Scilly Isles in the 
+south (49.9 degrees North) to the Shetlands (a bit less than 61 degrees North), and
+from the Outer Hebrides (nearly 9 degrees West) to Great Yarmouth (nearly 2 degrees East).
+In grid terms, valid eastings are between 0 and 700000 meters and valid northings 
+between 0 and 1250000 meters.
+
+The coverage of the OSTN02 routines is considerably smaller than this, because
+the model is not defined by the OS for points beyond about 2km from the shore.
+This is not a problem if you are working with references from on land but might
+surprise you if you are working with the coordinates (for example) of the
+corners of some map sheets on the coast.
 
 The design of the conversion routines deliberately forces the user to be aware
 of the difference between the OSGB36 and the WGS84 geoid models.  This probably

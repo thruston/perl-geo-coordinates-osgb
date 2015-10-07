@@ -3,13 +3,14 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 2.09 October 2015
 
     - Improved and generalized handling of maps to allow for multiple series, insets, and irregular boundaries
-    - New functions "format_grid_map" and "parse_map_grid" to replace Landranger functions
+    - New generic functions "format_grid_map" and "parse_map_grid" to replace the Landranger-specific functions
     - Complete insets and extensions to sheet boundaries for Landranger maps
     - Complete sheet boundaries for old One Inch 7th series maps
     - Complete sheet boundaries for Explorer series of 1:25000 maps
     - Reorganized distribution: 
       -- example scripts are in examples/
       -- map definitions are in maps/
+    - Minor improvements to precision
 
 2.08 June 2015
 
@@ -32,7 +33,6 @@ Revision history for Perl extension Geo::Coordinates::OSGB
     - removed precise URL for theory paper - the OS keep moving it about, so just Google for the name
     - removed non-ascii characters from POD in OSGB.pm to avoid encoding issue
     
-
 2.05  31 August 2013
 
     - Put blank lines back in OSTN02 to prevent pod2html taking an age during install

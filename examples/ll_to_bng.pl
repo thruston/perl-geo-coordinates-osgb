@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB qw/
         shift_ll_from_WGS84
         format_ll_trad
         format_grid_trad
-        format_grid_landranger/;
+        format_grid_map/;
 
 if ( @ARGV == 0 ) {
     die "Usage: $0 lat lon\n"
@@ -36,5 +36,5 @@ my ($e,  $n)  = ll_to_grid($lat, $lon);
 print "Your input: @ARGV\n";
 printf "is %s\n", scalar format_ll_trad($lat, $lon);
 
-printf "$e $n == %d %d from OSGB  (%s)\n", $e, $n, scalar format_grid_landranger($e, $n);
-printf "or %d %d from WGS84 (%s)\n", $ge, $gn, scalar format_grid_landranger($ge, $gn);
+printf "$e $n == %d %d from OSGB  (%s)\n", $e, $n, scalar format_grid_map($e, $n);
+printf "or %d %d from WGS84 (%s)\n", $ge, $gn, scalar format_grid_map($ge, $gn);

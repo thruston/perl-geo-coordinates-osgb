@@ -32,6 +32,26 @@ while (my ($k, $m) = each %maps) {
 
 print $plotter @fills;
 print $plotter "drawoptions(withpen pencircle scaled 0.2);\n";
+
+for my $lon (-9..2) {
+    my @points = ();
+    for my $lat (49.5..61.5) {
+        push @points, sprintf '(%.1f,%.1f)', map { $_/1000 } ll_to_grid($lat,$lon);
+    }
+    print $plotter 'draw ', join('--', @points), ' withcolor .7[.5 green,white];';
+    print $plotter sprintf 'label.bot("%s" & char 176, %s) withcolor .4 green;', $lon, $points[0];
+}
+for my $lat (50..61) {
+    my @points = ();
+    for my $lon (-9.2..2.2) {
+        push @points, sprintf '(%.1f,%.1f)', map { $_/1000 } ll_to_grid($lat,$lon);
+    }
+    print $plotter 'draw ', join('..', @points), ' withcolor .7[.5 green,white];';
+    print $plotter sprintf 'label.lft("%s" & char 176, %s) withcolor .4 green;', $lat, $points[0];
+}
+   
+
+
 print $plotter 'for i=0 upto 12: draw (0,100i) -- (700,100i) withcolor .7 white; label.rt(decimal 100i, (700,100i)); label.lft(decimal 100i, (0,100i)); endfor' ,"\n";
 print $plotter 'for i=0 upto  7: draw (100i,0) -- (100i,1200) withcolor .7 white; endfor' ,"\n";
 
@@ -39,7 +59,7 @@ use Geo::Coordinates::OSGB qw(format_grid_trad ll_to_grid);
 for my $x (0..6) {
     for my $y (0..11) {
         my ($sq, $e, $n) = format_grid_trad($x*100000,$y*100000);
-        print $plotter sprintf 'label("%s" infont "phvr8r" scaled 3, (%d,%d)) withcolor .9 white;', 
+        print $plotter sprintf 'label("%s" infont "phvr8r" scaled 4, (%d,%d)) withcolor .8 white;', 
                                       $sq, 50+$x*100, 50+$y*100;
     }
 }
