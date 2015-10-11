@@ -30,7 +30,6 @@ sub polygon_bbox {
     return [ [$llx, $lly], [$urx, $ury] ] ;
 }
 
-
 my @maps;
 my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
 
@@ -112,7 +111,6 @@ for my $f (@polygon_files) {
             $b->{area} <=> $a->{area}
         }
         
-
         # sort out the sides
         # first check the sides array
         # if there are insets but no sides, then promote the biggest inset to a side
@@ -120,9 +118,11 @@ for my $f (@polygon_files) {
             push @sides, map {$_->{poly}} shift @insets;
         }
 
+        my $parent_center;
         if (1==@sides) {
             my $b = polygon_bbox($sides[0]);
             push @maps, { series => $series, label => $label, bbox => $b, polygon => $sides[0] };
+            $parent_center = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
         }
         elsif (2==@sides) {
             my $b1 = polygon_bbox($sides[0]);
@@ -131,6 +131,7 @@ for my $f (@polygon_files) {
             my $center_E2 = $b2->[0][0] + ($b2->[1][0]-$b2->[0][0])/2;
             my $center_N1 = $b1->[0][1] + ($b1->[1][1]-$b1->[0][1])/2;
             my $center_N2 = $b2->[0][1] + ($b2->[1][1]-$b2->[0][1])/2;
+            $parent_center = [ ($center_E1+$center_E2)/2, ($center_N1+$center_N2)/2 ];
             my $E_diff = $center_E1 - $center_E2;
             my $N_diff = $center_N1 - $center_N2;
             my $label1 = my $label2 = $label;
@@ -153,32 +154,22 @@ for my $f (@polygon_files) {
         if (1==@insets) {
             my $p = $insets[0]->{poly};
             my $b = polygon_bbox($p);
-            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $p };
+            my $c = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
+            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $p, link => [ $c, $parent_center ] };
         }
         elsif (1 < @insets ) {
             my $inset_ordinal = 'A';
             for my $i (@insets) {
                 my $p = $i->{poly};
                 my $b = polygon_bbox($p);
+                my $c = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
                 my $s = sprintf "%s Inset %s", $label, $inset_ordinal++;
-                push @maps, { series => $series, label => $s, bbox => $b, polygon => $p };
+                push @maps, { series => $series, label => $s, bbox => $b, polygon => $p, link => [ $c, $parent_center ] };
             }
         }
     }
     close $fh;
 }
-
-use Geo::Coordinates::OSGB 'format_grid_GPS';
-#
-#my ($e, $n) = parse_grid('NR 640 440');
-#
-#for my $m (@maps) {
-#    if ($m->{bbox}->[0][0] <= $e && $e <= $m->{bbox}->[1][0]
-#     && $m->{bbox}->[0][1] <= $n && $n <= $m->{bbox}->[1][1] ) {
-#
-#        print $m->{series}, ":", $m->{label}, "\n";
-#    }
-#}
 
 open(my $perl, '>', '../lib/Geo/Coordinates/British_Maps.pm');
 print $perl <<'END_PREAMBLE';
@@ -193,8 +184,6 @@ our %name_for_map_series = (
   A => 'OS Landranger', 
   B => 'OS Explorer',
   C => 'OS One-Inch 7th series',
-  H => 'Harvey British Mountain Map',
-  J => 'Harvey Super Walker',
 );
 END_PREAMBLE
 
@@ -202,7 +191,10 @@ for my $m (@maps) {
     my $k = sprintf "%s:%s", $m->{series}, $m->{label};
     print $perl '$maps{"', $k, '"} = { ';
     printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
-    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{polygon}}), ']';
+    if (exists $m->{link}) {
+        printf $perl 'link => [[%d, %d], [%d, %d]], ', $m->{link}->[0][0], $m->{link}->[0][1], $m->{link}->[1][0], $m->{link}->[1][1];
+    }
+    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{polygon}}), ']'; # no comma because last
     print $perl " };\n";
 }
 
