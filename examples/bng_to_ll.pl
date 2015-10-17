@@ -30,6 +30,7 @@ print "Your input: $gr == $e $n ";
 printf "is %s\n", scalar format_grid_map($e, $n);
 
 printf "and %s on that sheet\n",  join ':', format_ll_trad($lat, $lon);
-printf "but %s in WGS84 terms\n", join ':', format_ll_trad($wla, $wlo);
+printf "but %s in WGS84 terms\n", scalar format_ll_ISO($wla, $wlo,'SECONDS');
 printf "or as decimals %.8g %.8g\n", $wla, $wlo;
+printf "%d %.8g  %d %.8g\n", int($wla), 60*($wla-int($wla)), int($wlo), 60*($wlo-int($wlo));
 

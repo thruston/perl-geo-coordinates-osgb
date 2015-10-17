@@ -120,7 +120,54 @@ ll_to_grid using OSGB36 shape.
     Grid   *------OSTN02 -----> B~b
 
 B and b are approx equal.
-B is definitive.  b is what you'll see on your eTrex.
+B is definitive.  b is what you would see on your eTrex.
 
 Note that of the intermediate results ("WGS84 grid" is meaningless,
 but OSGB36 LL is what is shown around the edges of OS maps).
+
+
+## Simplified interface
+
+grid_to_ll($e, $n, { geoid => "WGS84" or "OSGB36" or "EDM50" } )  default is WGS84 so that LL are usable with google etc
+                 
+
+grid_to_ll( { e => $x, n => $y, height => 0, datum = "Newlyn", geoid => "WGS84" } )
+  if off grid: (0,0) .. (700000,1250000)
+     return unhappy
+  if geoid="WGS84"
+      if on OSTN02:
+         transform eno to xyz + set method = ostn02
+      else:
+         transform eno to xyz + set method = helmert
+
+      transform x,y,z to ll
+  elsif geoid="OSGB36":
+      transform e,n,o to ll + set method = none or base?
+  else:
+      return unhappy - unknown geoid
+      
+  return happy + ll + method
+
+ll_to_grid( { lat => $lat, lon => $lon, geoid => "WGS84" } ) 
+
+  if geoid is unknown:
+     return unhappy
+
+  transform ll to xyz using given geoid
+
+  if on OSTN02:
+     transform xyz to eno + set method = ostn02
+  else:
+     transform xyz to eno + set method = helmert
+     if outside GB area:
+         return unhappy
+
+  return happy + eno + method
+     
+parse_grid - read GR in a variety of forms, return e,n
+  - e,n
+  - sq,e,n
+  - 'sq \s? e{0,5} \s? n{0,5}'
+  - map,e,n
+  - 'map-eeennn'
+

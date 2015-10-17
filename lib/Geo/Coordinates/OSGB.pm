@@ -1645,11 +1645,19 @@ two points that are one degree of latitude apart is about 110 km or just under
 70 miles. This is the distance as the crow flies from, say, Swindon to Walsall.
 So a tenth of a degree is about 11 km or 7 miles, a hundredth is just over 1km,
 0.001 is about 110m, 0.0001 about 11m and 0.00001 just over 1 m.  If you think
-in minutes, and seconds, then one minute is about 1850 m (and it's no
+in minutes, and seconds, then one minute is about 1840 m (and it's no
 coincidence that this happens to be approximately the same as 1 nautical mile
 since it was originally defined to be 1 minute of arc of the circumference of
 the globe).  One second is a bit over 30m, 0.1 seconds is about 3 m, and 0.0001
 second is about 3mm.
+
+       Degrees             Minutes              Seconds         * LATITUDE *
+          1  =  110 km        1  =  1.8 km         1  =  30 m
+        0.1  =  11 km       0.1  =  180 m        0.1  =   3 m
+       0.01  =  1.1 km     0.01  =   18 m       0.01  =  30 cm 
+      0.001  =  110 m     0.001  =    2 m      0.001  =   3 cm
+     0.0001  =  11 m     0.0001  =   20 cm    
+    0.00001  =  1.1 m   0.00001  =    2 cm  
 
 Degrees of latitude get very slightly longer as you go further north but not by
 much.  In contrast degrees of longitude, which represent the same length on the
@@ -1658,6 +1666,15 @@ latitudes.  In southern England one degree of latitude represents about 70 km
 or 44 miles, in northern Scotland it's less than 60 km or about 35 miles.
 Scaling everything down means that the fifth decimal place of a degree of
 longitude represents about 60-70cm on the ground.
+
+       Degrees                Minutes                 Seconds         * LONGITUDE *
+          1  =  60-70 km         1  =  1.0-1.2 km        1  =  17-20 m
+        0.1  =  6-7 km         0.1  =  100-120 m       0.1  =   2 m
+       0.01  =  600-700 m     0.01  =   10-12 m       0.01  =  20 cm 
+      0.001  =  60-70 m      0.001  =    1 m         0.001  =   2 cm
+     0.0001  =  6-7 m       0.0001  =   10 cm    
+    0.00001  =  60-70 cm   0.00001  =    1 cm  
+
 
 The transformations produced by this module between latitude and longitude
 given in the OSGB36 model and OS national grid references are exact to the
@@ -1668,6 +1685,27 @@ correct to the nearest 5 m -- although in some areas of the grid, you will get
 slightly better results than this.  Using the OSTN02 methods, the
 transformations between OSGB36 and WGS84 are correct to the nearest 25 to 30
 cm.
+
+Most consumer GPS units give position readings in units of about 1 metre.  For
+example my Garmin etrex 20 offers to show postion as longitude and latitude in
+degrees with 5 decimal places, degrees and minutes to 3 decimal places, or
+degrees, minutes and seconds to 1 decimal place.  Each of these displays
+corresponds to a resolution of about 1 m on the ground, as shown in the tables
+above.  Similarly, if I choose to display the location as a British National
+Grid reference then the unit shows me my position to the nearest metre.
+However, consumer units rarely give a fix that is more accurate than about 5 m
+in any direction. Most units show the current radius of inaccuracy on the
+satellite reception page; this radius increases in areas of poor GPS reception.
+
+Moreover, **all** GPS units work from signals that assume the WGS84 geoid
+model, so when they display your location as a grid reference they are
+transforming the WGS84 reading into an OSGB36 grid reference using methods
+similar to the quick methods discussed above.  This means that regardless of
+how good a signal you are getting on your hand held device, the 10-figure grid
+reference it gives you, can only be accurate to the nearest 5 m at best.  You
+can observe this for yourself, by taking the same walk on different days and
+comparing the GPS tracks; they will be a few metres apart even if you follow 
+exactly the same path.
 
 
 =head1 EXAMPLES
