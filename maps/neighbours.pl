@@ -31,7 +31,7 @@ sub plot_neighbours {
 
     my $scale = 0.004725; # so that 120 km fits across A4 page
 
-    my $circle = bounding_circle($map->{bbox}, 1.08);
+    my $circle = bounding_circle($map->{bbox}, 1.2);
 
     print $mp sprintf "cc = %s;\n", join '..', map { sprintf "(%g,%g)", $_->[0]*$scale, $_->[1]*$scale } @$circle;
     print $mp sprintf "pp = %s;\n", join '--', map { sprintf "(%g,%g)", $_->[0]*$scale, $_->[1]*$scale } @{$map->{polygon}};
@@ -58,6 +58,15 @@ sub plot_neighbours {
         }
     }
 
+    # find any other sheets wholly inside this bbox
+    while ( my ($k,$v) = each %maps ) {
+        my ($ss, $junk) = split ':', $k;
+        next unless $ss eq $series;
+        next if $k eq $key;
+        $sheet_names{$k}++ if $llx <= $v->{bbox}[0][0] && $v->{bbox}[1][0] <= $urx
+                           && $lly <= $v->{bbox}[0][1] && $v->{bbox}[1][1] <= $ury;
+    }
+
     my $i=0;
     for my $s (sort keys %sheet_names) {
         my @poly = (); 
@@ -69,15 +78,17 @@ sub plot_neighbours {
             $ury = $pair->[1] if $pair->[1] > $ury;
         }
         print $mp sprintf "N%d = %s;\n", $i, join '--', @poly;
-        my $adjust = $s =~ m{\A B:OL}xios ? +5 : -3;
-        print $mp sprintf "label(\"$s\", center N%d shifted %g up) withcolor .5[blue,white];\n", $i, $adjust;
-        print $mp sprintf "draw N%d withcolor .5[blue,white];\n", $i++;
+        if ( $s !~ m{Inset} ) {
+            my $adjust = $s =~ m{\A B:OL}xios ? +5 : -3;
+            print $mp sprintf "label(\"$s\", center N%d shifted %g up) withcolor .5[blue,white];\n", $i, $adjust;
+        }
+        print $mp sprintf "draw N%d withpen pencircle scaled 1 withcolor .5[blue,white];\n", $i++;
     }
 
     $llx = floor($llx/1000); $lly = floor($lly/1000);
     $urx = ceil($urx/1000); $ury = ceil($ury/1000);
 
-    print $mp "draw pp;\n";
+    print $mp "draw pp withpen pencircle scaled .4;\n";
     print $mp "label(\"$key\", center pp);\n";
     print $mp "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
     print $mp "input gb-coast-large.mp;\n";
@@ -94,7 +105,7 @@ sub plot_neighbours {
         printf $mp "label(\"%02d\" infont \"phvr8r\" scaled 0.8, (%g,%g) shifted 7 left);\n",  $y % 100, $llx*1000*$scale, $y*1000*$scale;
         printf $mp "label(\"%02d\" infont \"phvr8r\" scaled 0.8, (%g,%g) shifted 7 right);\n", $y % 100, $urx*1000*$scale, $y*1000*$scale;
     }
-
+    #print $mp "draw cc withcolor .67 red;\n";
     print $mp "draw ss; endfig;\n"
 
 }
@@ -108,7 +119,10 @@ HEADER
 
 my $i = 0;
 for my $sheet (@ARGV) {
-    next unless $maps{$sheet};
+    if (! defined $maps{$sheet}) {
+        warn "No sheet $sheet\n";
+        next;
+    }
     $i++;
     plot_neighbours($mp, $i, $sheet); 
 }
