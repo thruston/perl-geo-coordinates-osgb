@@ -90,9 +90,11 @@ sub plot_neighbours {
 
     print $mp "draw pp withpen pencircle scaled .4;\n";
     print $mp "label(\"$key\", center pp);\n";
-    print $mp sprintf "label.urt(\"%d %d\" infont defaultfont scaled 0.6, llcorner pp);\n",
+    print $mp sprintf "label.urt(\"%d %d\" infont defaultfont scaled 0.6, (%g,%g));\n",
                        $map->{polygon}[0][0]/1000,
-                       $map->{polygon}[0][1]/1000;
+                       $map->{polygon}[0][1]/1000,
+                       $map->{polygon}[0][0]*$scale,
+                       $map->{polygon}[0][1]*$scale;
     print $mp "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
     print $mp "input gb-coast-large.mp;\n";
     print $mp "drawoptions();\n";
