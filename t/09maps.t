@@ -3,7 +3,7 @@
 
 use Geo::Coordinates::OSGB qw/parse_grid format_grid_trad format_grid_map format_ll_ISO parse_map_grid grid_to_ll/;
 
-use Test::Simple tests => 14;
+use Test::Simple tests => 15;
 
 my ($pt, $s, $t);
 
@@ -30,6 +30,10 @@ ok($s eq "NN 241 738 on A:41, B:392, C:47", $s);
 
 $s = format_grid_map(parse_grid("SU 029 269"));
 ok($s eq 'SU 029 269 on A:184, B:118N, B:130S, C:167', $s);
+
+# Tetbury Museum
+$s = format_grid_map(parse_grid("ST 889 933"));
+ok($s eq 'ST 889 933 on A:162, A:163, A:173, B:168, C:156, C:157', $s);
 
 # points on upper right edges are *not* on map
 $s = format_grid_map(406000, 130000);
