@@ -30,7 +30,32 @@ sub polygon_bbox {
     return [ [$llx, $lly], [$urx, $ury] ] ;
 }
 
-my @maps;
+# work out labels for two boxes : NS or EW?
+sub pair_label_suffixes {
+    my $b1 = shift;
+    my $b2 = shift;
+    my $center_E1 = $b1->[0][0] + ($b1->[1][0]-$b1->[0][0])/2;
+    my $center_E2 = $b2->[0][0] + ($b2->[1][0]-$b2->[0][0])/2;
+    my $center_N1 = $b1->[0][1] + ($b1->[1][1]-$b1->[0][1])/2;
+    my $center_N2 = $b2->[0][1] + ($b2->[1][1]-$b2->[0][1])/2;
+    my $E_diff = $center_E1 - $center_E2;
+    my $N_diff = $center_N1 - $center_N2;
+    my $label1;
+    my $label2;
+    if ( abs($E_diff) > abs($N_diff) ) {
+        $label1 = $E_diff > 0 ? 'E' : 'W';
+        $label2 = $E_diff > 0 ? 'W' : 'E';
+    }
+    else {
+        $label1 = $N_diff > 0 ? 'N' : 'S';
+        $label2 = $N_diff > 0 ? 'S' : 'N';
+    }
+    return ($label1, $label2);
+}
+
+
+
+my @sheets;
 my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
 
 my @polygon_files = (
@@ -39,10 +64,29 @@ my @polygon_files = (
     'polygons-os-one-inch.txt',
 );
 
+my %sizes = ();
+
+my $min_inset_area = 1;
+my $max_inset_area = 300;
+my $min_sheet_area = 300;
+my $max_sheet_area = 10000;
+
 for my $f (@polygon_files) {
     open my $fh, '<', $f;
+    warn "Reading from $f\n";
     LINE:
     while (<$fh>) {
+
+        if ( $_ =~ m{\A (inset|sheet)_area_range \s+ (\d+) \D+ (\d+) \s* \Z}iosx ) {
+            if ( $1 eq 'inset') {
+                ($min_inset_area, $max_inset_area) = ($2, $3);
+            }
+            else {
+                ($min_sheet_area, $max_sheet_area) = ($2, $3);
+            }
+            next LINE;
+        }
+
         my ($nn, $label, $flag, $mpg) = split ' ', $_, 4;
         $mpg =~ s/\s*$//;
 
@@ -52,7 +96,8 @@ for my $f (@polygon_files) {
 
         croak "Missing flag" if $flag =~ m{\A\(}iosx;
 
-        my $series = substr($nn,0,1);
+        croak "Invalid index number" unless $nn =~ m{\A ([A-Z]) (\d+) \Z}iosx;
+        my $series = $1;
 
         # split the MULTIPOLYGON string up 1 char at a time using the reverse and chop trick
         my $nest = 0;
@@ -72,6 +117,10 @@ for my $f (@polygon_files) {
             }
         }
         # split each POLYGON string into an array of coordinate pairs
+        # and work out the areas, and push then into the right sides array
+        my @sides = ( [], [] );
+        my $side_index = -1;
+
         for my $p (@polylist) {
             $p = [ map { [ split ' ' ] } split ',', $p ];
             # check each pair has two and only two coordinates and that the polygon is closed
@@ -83,93 +132,71 @@ for my $f (@polygon_files) {
             }
             croak "Unclosed polygon" unless $p->[0][0] == $p->[-1][0]
                                          && $p->[0][1] == $p->[-1][1];
-        }
-        
-        # split the polygons up into insets and sides 
-        # Often there will be only 1 side and 0 insets, so special case that first
-        if (1==@polylist) {
-            my $b = polygon_bbox($polylist[0]);
-            push @maps, { series => $series, label => $label, bbox => $b, polygon => $polylist[0] };
-            next LINE;
-        }
-
-        my @insets;
-        my @inset_areas;
-        my @sides;
-        for my $p (@polylist) {
+            
             my $a = polygon_area_in_km($p);
-            if ($a < $Minimum_sheet_size) {
-                #print "$label --> Inset area: $a\n";
-                @insets = sort by_area @insets, { poly => $p, area => $a };
+            croak "Not a positive area" unless $a > 0;
+
+            my $b = polygon_bbox($p);
+
+            # push the polys into lists here (list for side 1, list for side 2)
+            # main side is first poly in each list
+
+            if ( $min_inset_area <= $a && $a <= $max_inset_area ) {
+                # do nothing here
+            }
+            elsif ( $min_sheet_area <= $a && $a <= $max_sheet_area ) {
+                croak "$series $label too many sides" if $side_index > 0;
+                $side_index++;
             }
             else {
-                push @sides, $p;
+                croak "$label Area out of expected ranges";
             }
+            push @{$sides[$side_index]}, { poly => $p, area => $a, bbox => $b };
+
         }
 
-        sub by_area {
-            $b->{area} <=> $a->{area}
-        }
-        
-        # sort out the sides
-        # first check the sides array
-        # if there are insets but no sides, then promote the biggest inset to a side
-        if (0 < @insets && 0 == @sides) {
-            push @sides, map {$_->{poly}} shift @insets;
-        }
-
-        my $parent_center;
-        if (1==@sides) {
-            my $b = polygon_bbox($sides[0]);
-            push @maps, { series => $series, label => $label, bbox => $b, polygon => $sides[0] };
-            $parent_center = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
-        }
-        elsif (2==@sides) {
-            my $b1 = polygon_bbox($sides[0]);
-            my $b2 = polygon_bbox($sides[1]);
-            my $center_E1 = $b1->[0][0] + ($b1->[1][0]-$b1->[0][0])/2;
-            my $center_E2 = $b2->[0][0] + ($b2->[1][0]-$b2->[0][0])/2;
-            my $center_N1 = $b1->[0][1] + ($b1->[1][1]-$b1->[0][1])/2;
-            my $center_N2 = $b2->[0][1] + ($b2->[1][1]-$b2->[0][1])/2;
-            $parent_center = [ ($center_E1+$center_E2)/2, ($center_N1+$center_N2)/2 ];
-            my $E_diff = $center_E1 - $center_E2;
-            my $N_diff = $center_N1 - $center_N2;
-            my $label1 = my $label2 = $label;
-            if ( abs($E_diff) > abs($N_diff) ) {
-                $label1 .= $E_diff > 0 ? 'E' : 'W';
-                $label2 .= $E_diff > 0 ? 'W' : 'E';
+        # do we have two sides?  if so, find labels
+        my ($i, $key, $parent_key);
+        if ( @{$sides[1]} > 0 ) {
+            my @s = pair_label_suffixes($sides[0][0]{bbox}, $sides[1][0]{bbox});
+            for my $side (0..1) {
+                $parent_key = sprintf "%s:%s%s", $series, $label, $s[$side];
+                $i = 0;
+                for my $region ( @{$sides[$side]} ) {
+                    $key = sprintf "%s%s", $parent_key, $i==0 ? '' : '.'.chr(96+$i);
+                    $i++;
+                    push @sheets, { key => $key, 
+                                    bbox => $region->{bbox},
+                                    area => $region->{area},
+                                    poly => $region->{poly},
+                                    series => $series,
+                                    number => $label,
+                                    parent => $parent_key,
+                                };
+                }
             }
-            else {
-                $label1 .= $N_diff > 0 ? 'N' : 'S';
-                $label2 .= $N_diff > 0 ? 'S' : 'N';
-            }
-            push @maps, { series => $series, label => $label1, bbox => $b1, polygon => $sides[0] };
-            push @maps, { series => $series, label => $label2, bbox => $b2, polygon => $sides[1] };
         }
         else {
-            croak "More than two sides to sheet $label";
-        }
-
-        # do the insets
-        if (1==@insets) {
-            my $p = $insets[0]->{poly};
-            my $b = polygon_bbox($p);
-            my $c = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
-            push @maps, { series => $series, label => "$label Inset", bbox => $b, polygon => $p, link => [ $c, $parent_center ] };
-        }
-        elsif (1 < @insets ) {
-            my $inset_ordinal = 'A';
-            for my $i (@insets) {
-                my $p = $i->{poly};
-                my $b = polygon_bbox($p);
-                my $c = [ ($b->[0][0]+$b->[1][0])/2 ,  ($b->[0][1]+$b->[1][1])/2 ];
-                my $s = sprintf "%s Inset %s", $label, $inset_ordinal++;
-                push @maps, { series => $series, label => $s, bbox => $b, polygon => $p, link => [ $c, $parent_center ] };
+            $parent_key = sprintf "%s:%s", $series, $label;
+            $i = 0;
+            for my $region ( @{$sides[0]} ) {
+                $key = sprintf "%s%s", $parent_key, $i==0 ? '' : '.'.chr(96+$i);
+                $i++;
+                push @sheets, { key => $key, 
+                                bbox => $region->{bbox},
+                                area => $region->{area},
+                                poly => $region->{poly},
+                                series => $series,
+                                number => $label,
+                                parent => $parent_key,
+                            };
             }
         }
+        
     }
     close $fh;
 }
+
 
 open(my $perl, '>', '../lib/Geo/Coordinates/British_Maps.pm');
 print $perl <<'END_PREAMBLE';
@@ -177,7 +204,7 @@ package Geo::Coordinates::British_Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.09';
+our $VERSION = '2.10';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
 our %name_for_map_series = ( 
@@ -187,17 +214,16 @@ our %name_for_map_series = (
 );
 END_PREAMBLE
 
-for my $m (@maps) {
-    my $k = sprintf "%s:%s", $m->{series}, $m->{label};
-    print $perl '$maps{"', $k, '"} = { ';
+for my $m (@sheets) {
+    print $perl '$maps{"', $m->{key}, '"} = { ';
     printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
-    if (exists $m->{link}) {
-        printf $perl 'link => [[%d, %d], [%d, %d]], ', $m->{link}->[0][0], $m->{link}->[0][1], $m->{link}->[1][0], $m->{link}->[1][1];
+    for my $f ( qw{ area series number parent } ) {
+        printf $perl "%s => '%s', ", $f, $m->{$f};
     }
-    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{polygon}}), ']'; # no comma because last
+    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{poly}}), ']'; # no comma because last
     print $perl " };\n";
 }
 
 print $perl "1;\n";
 close $perl;
-warn sprintf "Wrote %d map sheet definitions to maps module\n", scalar @maps;
+warn sprintf "Wrote %d sheet definitions to maps module\n", scalar @sheets;
