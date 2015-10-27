@@ -149,7 +149,7 @@ for my $f (@polygon_files) {
                 $side_index++;
             }
             else {
-                croak "$label Area out of expected ranges";
+                croak "$label Area $a out of expected range";
             }
             push @{$sides[$side_index]}, { poly => $p, area => $a, bbox => $b };
 

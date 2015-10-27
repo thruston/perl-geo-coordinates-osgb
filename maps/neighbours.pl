@@ -68,6 +68,7 @@ sub plot_neighbours {
     }
 
     my $i=0;
+    my @sheets_drawing = ();
     for my $s (sort keys %sheet_names) {
         my @poly = (); 
         for my $pair (@{$maps{$s}->{polygon}}) {
@@ -77,19 +78,30 @@ sub plot_neighbours {
             $urx = $pair->[0] if $pair->[0] > $urx;
             $ury = $pair->[1] if $pair->[1] > $ury;
         }
-        print $mp sprintf "N%d = %s;\n", $i, join '--', @poly;
+        push @sheets_drawing, sprintf "N%d = %s;\n", $i, join '--', @poly;
         if ( $s !~ m{Inset} ) {
             my $adjust = $s =~ m{\A B:OL}xios ? +5 : -3;
-            print $mp sprintf "label(\"$s\", center N%d shifted %g up) withcolor .5[blue,white];\n", $i, $adjust;
+            push @sheets_drawing, sprintf "label(\"$s\", center N%d shifted %g up) withcolor .5[blue,white];\n", $i, $adjust;
         }
-        print $mp sprintf "draw N%d withpen pencircle scaled 1 withcolor .5[blue,white];\n", $i++;
+        push @sheets_drawing, sprintf "draw N%d withpen pencircle scaled 1 withcolor .5[blue,white];\n", $i++;
     }
 
     $llx = floor($llx/1000); $lly = floor($lly/1000);
     $urx = ceil($urx/1000); $ury = ceil($ury/1000);
 
+    # add grid in the background
+    for my $x ( ceil($llx/10) .. floor($urx/10) ) {
+        printf $mp "draw ((%g,%g) -- (%g,%g)) shifted (%g,0) withcolor .8white;\n", map {$_*1000*$scale} $llx,$lly,$llx,$ury,10*$x-$llx;
+    }
+    for my $y ( ceil($lly/10) .. floor($ury/10) ) {
+        printf $mp "draw ((%g,%g) -- (%g,%g)) shifted (0,%g) withcolor .8white;\n", map {$_*1000*$scale} $llx,$lly,$urx,$lly,10*$y-$lly;
+    }
+
+    print $mp @sheets_drawing;
+
     print $mp "draw pp withpen pencircle scaled .4;\n";
-    print $mp "label(\"$key\", center pp);\n";
+    print $mp "label.top(\"$key\", center pp);\n";
+    print $mp "label.bot(\"$map->{area}\" infont \"phvr8r\" scaled 0.6, center pp) withcolor .67 red;\n";
     print $mp sprintf "label.urt(\"%d %d\" infont defaultfont scaled 0.6, (%g,%g));\n",
                        $map->{polygon}[0][0]/1000,
                        $map->{polygon}[0][1]/1000,
