@@ -1,0 +1,16 @@
+H101  101  Assynt                          
+H102  102  Torridon & Fisherfield          
+H103  103  Knoydart, Kintail & Glen Affric 
+H104  104  Cairngorms & Lochnagar          
+H105  105  Ben Nevis & Glen Coe            
+H106  106  Schiehallion                    
+H107  107  Southern Highlands              
+H201  201  Lake District                   
+H202  202  Yorkshire Dales                 
+H203  203  North York Moors                
+H204  204  Dark Peak                       
+H205  205  White Peak                      
+H206  206  Dartmoor                        
+H301  301  Snowdonia North                 
+H302  302  Snowdonia South                 
+H303  303  Brecon Beacons                  

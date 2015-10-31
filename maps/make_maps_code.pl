@@ -62,6 +62,8 @@ my @polygon_files = (
     'polygons-os-landranger.txt',
     'polygons-os-explorer.txt',
     'polygons-os-one-inch.txt',
+    'polygons-harvey-superwalker.txt',
+    'polygons-harvey-british-mountain.txt',
 );
 
 my %sizes = ();
@@ -134,7 +136,13 @@ for my $f (@polygon_files) {
                                          && $p->[0][1] == $p->[-1][1];
             
             my $a = polygon_area_in_km($p);
-            croak "Not a positive area" unless $a > 0;
+            if ($a < 0 ) {
+                for my $pt (reverse @$p) {
+                    print join(' ', @$pt), ', ';
+                }
+                print "\n";
+                croak "Not a positive area for $label $a";
+            }
 
             my $b = polygon_bbox($p);
 
@@ -211,6 +219,8 @@ our %name_for_map_series = (
   A => 'OS Landranger', 
   B => 'OS Explorer',
   C => 'OS One-Inch 7th series',
+  H => 'Harvey British Mountain maps',
+  J => 'Harvey Superwalker',
 );
 END_PREAMBLE
 
