@@ -26,7 +26,7 @@ ok($s eq 'SP 516 066 on A:164, B:180E, C:158', $s);
 
 
 $s = format_grid_map(parse_grid("NN 241 738"));
-ok($s eq "NN 241 738 on A:41, B:392, C:47", $s);
+ok($s eq "NN 241 738 on A:41, B:392, C:47, H:105, J:112", $s);
 
 $s = format_grid_map(parse_grid("SU 029 269"));
 ok($s eq 'SU 029 269 on A:184, B:118N, B:130S, C:167', $s);

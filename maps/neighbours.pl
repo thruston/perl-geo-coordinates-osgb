@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Geo::Coordinates::OSGB qw{format_grid_map};
+use Geo::Coordinates::OSGB qw{parse_grid format_grid_map};
 use Geo::Coordinates::British_Maps qw{%maps};
 use POSIX qw/floor ceil/;
 
@@ -25,6 +25,7 @@ sub plot_neighbours {
     my $mp = shift;
     my $n  = shift;
     my $key = shift;
+    my $mark = shift;
     my $map = $maps{$key};
     my ($series, $label) = split ':', $key;
     print $mp "beginfig($n);\npath cc, pp, ss, N[];\n";
@@ -123,6 +124,11 @@ sub plot_neighbours {
         printf $mp "label(\"%02d\" infont \"phvr8r\" scaled 0.8, (%g,%g) shifted 7 right);\n", $y % 100, $urx*1000*$scale, $y*1000*$scale;
     }
     #print $mp "draw cc withcolor .67 red;\n";
+    
+    if (defined $mark) {
+        my ($x,$y) = map { $_*$scale } parse_grid($mark);
+        print $mp "fill fullcircle scaled 3 shifted ($x,$y) withcolor .67 green;\n";
+    }
     print $mp "draw ss; endfig;\n"
 
 }
@@ -135,13 +141,14 @@ defaultfont := "phvr8r";
 HEADER
 
 my $i = 0;
-for my $sheet (@ARGV) {
+for my $arg (@ARGV) {
+    my ($sheet, $mark) = split '/', $arg, 2;
     if (! defined $maps{$sheet}) {
         warn "No sheet $sheet\n";
         next;
     }
     $i++;
-    plot_neighbours($mp, $i, $sheet); 
+    plot_neighbours($mp, $i, $sheet, $mark); 
 }
 print $mp <<'FOOTER';
 end
