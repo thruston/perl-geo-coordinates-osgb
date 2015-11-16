@@ -53,43 +53,69 @@ sub pair_label_suffixes {
     return ($label1, $label2);
 }
 
+my @series_to_build = ();
+open my $control, '<', 'map_series.txt' or die "Cannot open control file\n";
+while ( <$control> ) {
+    chomp;
+    next unless my ($id, $file, $sides, $max_inset_area, $max_sheet_area, $short_name, $long_name) =
+          $_ =~ /([A-Z])\s+(\S+)\s+(\d)\D+(\d+)\D+(\d+)\s+(\S+)\s+(\S.*)$/osmx;
+
+    $long_name =~ s/\A\"(.*)\"\Z/$1/s or
+    $long_name =~ s/\A\'(.*)\'\Z/$1/s;
+
+    push @series_to_build, {
+        id         => $id,                                
+        cat_file   => sprintf('catalogue-%s.txt', $file), 
+        poly_file  => sprintf('polygons-%s.txt', $file),  
+        max_inset_area => $max_inset_area,                    
+        max_sheet_area => $max_sheet_area,                    
+        short_name => $short_name,                        
+        long_name  => $long_name,                        
+    }
+}
+
+#for my $s (@series_to_build) {
+#    for my $k (sort keys %$s) {
+#        print "$k --> $s->{$k}\n";
+#    }
+#}
 
 
 my @sheets;
-my $Minimum_sheet_size = 300; # Anything smaller than 300km^2 is an inset
+my %label_for;
+my %title_for;
+my %seen;
 
-my @polygon_files = (
-    'polygons-os-landranger.txt',
-    'polygons-os-explorer.txt',
-    'polygons-os-one-inch.txt',
-    'polygons-harvey-superwalker.txt',
-    'polygons-harvey-british-mountain.txt',
-);
+use Business::ISBN qw( valid_isbn_checksum );
 
-my %sizes = ();
+for my $s (@series_to_build) {
+    my $series = $s->{id};
+    open my $cat, '<', $s->{cat_file} or die "Cannot open catalogue file for $series\n";
+    warn "Reading catalogue for $s->{long_name}\n";
+    while ( <$cat> ) {
+        chomp;
+        my ($nn, $isbn, $label, $title) = split ' ', $_, 4;
+        croak "Invalid index number: $nn $series" unless $nn =~ m{\A $series (\d+) \Z}x;
+        
+        if ( $isbn ) {
+            croak "Invalid ISBN for $nn : $isbn\n" unless valid_isbn_checksum($isbn);
+            croak "Duplicate ISBN for $nn\n" if $seen{$isbn}++;
+        }
 
-my $min_inset_area = 1;
-my $max_inset_area = 300;
-my $min_sheet_area = 300;
-my $max_sheet_area = 10000;
+        croak "Duplicate id for $nn\n" if exists $title_for{$nn};
+        $title =~ s/\s*\Z//iosxm;
+        $title_for{$nn} = $title;
+        $label_for{$nn} = $label;
 
-for my $f (@polygon_files) {
-    open my $fh, '<', $f;
-    warn "Reading from $f\n";
+    }
+
+    close $cat;
+    open my $fh, '<', $s->{poly_file} or die "Cannot open polygon file for $series\n";
+    warn "Reading polygons for $s->{long_name}\n";
     LINE:
     while (<$fh>) {
 
-        if ( $_ =~ m{\A (inset|sheet)_area_range \s+ (\d+) \D+ (\d+) \s* \Z}iosx ) {
-            if ( $1 eq 'inset') {
-                ($min_inset_area, $max_inset_area) = ($2, $3);
-            }
-            else {
-                ($min_sheet_area, $max_sheet_area) = ($2, $3);
-            }
-            next LINE;
-        }
-
-        my ($nn, $label, $flag, $mpg) = split ' ', $_, 4;
+        my ($nn, $junk, $flag, $mpg) = split ' ', $_, 4;
         $mpg =~ s/\s*$//;
 
         next LINE if $mpg eq 'EMPTY';
@@ -98,16 +124,18 @@ for my $f (@polygon_files) {
 
         croak "Missing flag" if $flag =~ m{\A\(}iosx;
 
-        croak "Invalid index number" unless $nn =~ m{\A ([A-Z]) (\d+) \Z}iosx;
-        my $series = $1;
+        croak "Invalid index number: $nn $series" unless $nn =~ m{\A $series (\d+) \Z}x;
+
+        croak "Missing title for $nn\n" unless my $title = $title_for{$nn};
+        croak "Missing label for $nn\n" unless my $label = $label_for{$nn};
 
         # split the MULTIPOLYGON string up 1 char at a time using the reverse and chop trick
         my $nest = 0;
         my @polylist;
         my $p=0;
-        my $s = reverse $mpg;
-        while (length $s) {
-            my $c = chop $s;
+        my $gpm = reverse $mpg;
+        while (length $gpm) {
+            my $c = chop $gpm;
             if ($nest==1 && $c eq ',') {
                $p++;
                next;
@@ -149,10 +177,10 @@ for my $f (@polygon_files) {
             # push the polys into lists here (list for side 1, list for side 2)
             # main side is first poly in each list
 
-            if ( $min_inset_area <= $a && $a <= $max_inset_area ) {
+            if ( $a <= $s->{max_inset_area} ) {
                 # do nothing here
             }
-            elsif ( $min_sheet_area <= $a && $a <= $max_sheet_area ) {
+            elsif ( $a <= $s->{max_sheet_area} ) {
                 croak "$series $label too many sides" if $side_index > 0;
                 $side_index++;
             }
@@ -166,9 +194,9 @@ for my $f (@polygon_files) {
         # do we have two sides?  if so, find labels
         my ($i, $key, $parent_key);
         if ( @{$sides[1]} > 0 ) {
-            my @s = pair_label_suffixes($sides[0][0]{bbox}, $sides[1][0]{bbox});
+            my @suffixes = pair_label_suffixes($sides[0][0]{bbox}, $sides[1][0]{bbox});
             for my $side (0..1) {
-                $parent_key = sprintf "%s:%s%s", $series, $label, $s[$side];
+                $parent_key = sprintf "%s:%s%s", $series, $label, $suffixes[$side];
                 $i = 0;
                 for my $region ( @{$sides[$side]} ) {
                     $key = sprintf "%s%s", $parent_key, $i==0 ? '' : '.'.chr(96+$i);
@@ -180,6 +208,7 @@ for my $f (@polygon_files) {
                                     series => $series,
                                     number => $label,
                                     parent => $parent_key,
+                                    title => $title,
                                 };
                 }
             }
@@ -197,6 +226,7 @@ for my $f (@polygon_files) {
                                 series => $series,
                                 number => $label,
                                 parent => $parent_key,
+                                title => $title,
                             };
             }
         }
@@ -227,7 +257,9 @@ END_PREAMBLE
 for my $m (@sheets) {
     print $perl '$maps{"', $m->{key}, '"} = { ';
     printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
-    for my $f ( qw{ area series number parent } ) {
+    for my $f ( qw{area series number parent title} ) {
+        die "No f\n" unless defined $f;
+        die "No $f in $m->{key}\n" unless defined $m->{$f};
         printf $perl "%s => '%s', ", $f, $m->{$f};
     }
     print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{poly}}), ']'; # no comma because last

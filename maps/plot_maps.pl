@@ -5,13 +5,11 @@ use Geo::Coordinates::British_Maps qw(%maps);
 sub plot_poly {
     my ($path, $s) = @_;
     my $color  = $s =~ m{\AOL}osxi ? 'red' : 'blue';
-    my $adjust = $s =~ m{\AOL}osxi ? '+2' : '-2'; 
-    my $out = $s =~ m{Inset}xios
-        ? sprintf "p:=%s; draw p; label.ulft(\"%s\" infont \"phvr8r\" scaled 0.3, ulcorner p) withcolor .6[%s,white];\n", 
-                    $path, $s, $color
-        : sprintf "p:=%s; draw p; label(\"%s\" infont \"phvb8r\" scaled 0.5, center p shifted (0,%s)) withcolor .4[%s,white];\n", 
+    my $adjust = $s =~ m{\AOL}osxi ? '+2' : '-2';
+    $s =~ s/–/"&char149&"/;
+    $s =~ s/’/'/;
+    return sprintf "p:=%s; draw p; label((\"%s\") infont \"phvb8r\" scaled 0.5, center p shifted (0,%s)) withcolor .4[%s,white];\n", 
                     $path, $s, $adjust, $color;
-    return $out;
 }
 
 my $series_wanted = (@ARGV > 0) ? $ARGV[0] : 'A';
@@ -24,6 +22,9 @@ my @fills;
 my @draws;
 while (my ($k, $m) = each %maps) {
     my ($series, $label) = split ':', $k;
+    # patch
+    $label = $m->{title};
+
     my $p = index($series_wanted, $series);
     next if $p < 0;
     my $path = join '--', map { sprintf "(%.1f,%.1f)", $_->[0]/1000, $_->[1]/1000 } @{$m->{polygon}}; 
