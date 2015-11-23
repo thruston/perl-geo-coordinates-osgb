@@ -9,10 +9,10 @@ J108  9781851375424  108  Rum, Eigg, Canna, Muck
 J109  9781851374687  109  Ben Avon                            
 J110  9781851374939  110  Cairn Gorm                          
 J111  9781851373543  111  Lochnagar                           
-J112  9781851374021  112  Ben Nevis, Mamores and Grey Corries 
+J112  9781851374021  112  Ben Nevis, Mamores & Grey Corries 
 J113  9781851373499  113  Glen Coe                            
 J114  9781851375417  114  Ben Lawers                          
-J115  9781851373482  115  Crianlarich, Ben Lui and Ben Mor    
+J115  9781851373482  115  Crianlarich, Ben Lui & Ben Mor    
 J116  9781851374663  116  Ben Ledi                            
 J117  9781851373895  117  Ben Lomond                          
 J118  9781851374915  118  Arrochar Alps                       
