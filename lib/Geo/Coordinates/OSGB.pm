@@ -21,29 +21,14 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
 use constant RAD => 0.017453292519943295769236907684886127134428718885417;
 use constant DAR => 57.295779513082320876798154814105170332405472466564;
-
-use constant WGS84_MAJOR_AXIS => 6_378_137.000;
-use constant WGS84_MINOR_AXIS => 6_356_752.3141;
-use constant WGS84_FLATTENING => 1 / 298.257223563;
 use constant EPSILON => 1E-12;
 
-#Semi-Major Axis	6378137.000
-#Semi-Minor Axis	6356752.314140
-#Inverse flattening	298.257222101
-
-
-use constant OSGB_MAJOR_AXIS  => 6_377_563.396;
-use constant OSGB_MINOR_AXIS  => 6_356_256.909;
-
-# set defaults for Britain
 my %ellipsoid_shapes = (
-    WGS84  => [ WGS84_MAJOR_AXIS, WGS84_MINOR_AXIS ],
-    ETRS89 => [ WGS84_MAJOR_AXIS, WGS84_MINOR_AXIS ],
-    ETRN89 => [ WGS84_MAJOR_AXIS, WGS84_MINOR_AXIS ],
-    GRS80  => [ WGS84_MAJOR_AXIS, WGS84_MINOR_AXIS ],
-    OSGB36 => [ OSGB_MAJOR_AXIS,  OSGB_MINOR_AXIS  ],
-    OSGM02 => [ OSGB_MAJOR_AXIS,  OSGB_MINOR_AXIS  ],
-); # yes lots of synonyms
+    WGS84  => [ 6_378_137.000, 6_356_752.31424518, 298.257223563  ],
+    ETRS89 => [ 6_378_137.000, 6_356_752.314140,   298.257222101 ],
+    GRS80  => [ 6_378_137.000, 6_356_752.314140,   298.257222101 ],
+    OSGB36 => [ 6_377_563.396, 6_356_256.909,      299.3249612665 ],
+); 
 
 # constants for OSGB mercator projection
 use constant ORIGIN_LONGITUDE    => RAD * -2;
@@ -68,9 +53,8 @@ sub _llh_to_cartesian {
     my $phi = RAD * $lat;  my $sp = sin $phi; my $cp = cos $phi;
     my $lam = RAD * $lon;  my $sl = sin $lam; my $cl = cos $lam;
 
-    my ($a, $b) = @{$ellipsoid_shapes{$options->{shape}}};
-    my $ee = (1-$b/$a)*(1+$b/$a);
-    #warn "e2: $ee\n";
+    my ($a, $b, $f) = @{$ellipsoid_shapes{$options->{shape}}};
+    my $ee = 2/$f - (1/$f)**2;
 
     my $nu = $a / sqrt(1 - $ee*$sp*$sp);
     #warn "nu: $nu\n";
@@ -85,9 +69,8 @@ sub _llh_to_cartesian {
 sub _cartesian_to_llh {
     my ($x, $y, $z, $options) = ( @_, { shape => 'WGS84' } );
 
-    my ($a, $b) = @{$ellipsoid_shapes{$options->{shape}}};
-    my $ee = (1-$b/$a)*(1+$b/$a);
-    #warn "e2: $ee\n";
+    my ($a, $b, $f) = @{$ellipsoid_shapes{$options->{shape}}};
+    my $ee = 2/$f - (1/$f)**2;
 
     my $p = sqrt($x*$x+$y*$y);
     my $lam = atan2 $y, $x;
@@ -111,7 +94,7 @@ sub _cartesian_to_llh {
 
 }
 
-sub _small_Helmert_transform {
+sub _small_Helmert_transform_for_OSGB {
     my ($direction, $xa, $ya, $za) = @_;
     my $tx = $direction * -446.448;
     my $ty = $direction * +125.157;
@@ -129,7 +112,7 @@ sub _small_Helmert_transform {
 sub _shift_ll_from_osgb36_to_wgs84 {
     my ($lat, $lon) = @_;
     my ($xa, $ya, $za) = _llh_to_cartesian($lat, $lon, 0, { shape => 'OSGB36' });
-    my ($xb, $yb, $zb) = _small_Helmert_transform(-1,$xa, $ya, $za);
+    my ($xb, $yb, $zb) = _small_Helmert_transform_for_OSGB(-1,$xa, $ya, $za);
     my ($latx, $lonx, $junk) = _cartesian_to_llh($xb, $yb, $zb, { shape => 'WGS84' });
     return ($latx, $lonx);
 }
@@ -137,7 +120,7 @@ sub _shift_ll_from_osgb36_to_wgs84 {
 sub _shift_ll_from_wgs84_to_osgb36 {
     my ($lat, $lon) = @_;
     my ($xa, $ya, $za) = _llh_to_cartesian($lat, $lon, 0, { shape => 'WGS84' });
-    my ($xb, $yb, $zb) = _small_Helmert_transform(+1,$xa, $ya, $za);
+    my ($xb, $yb, $zb) = _small_Helmert_transform_for_OSGB(+1,$xa, $ya, $za);
     my ($latx, $lonx, $junk) = _cartesian_to_llh($xb, $yb, $zb, { shape => 'OSGB36' });
     return ($latx, $lonx);
 }
@@ -988,8 +971,8 @@ sub shift_ll_from_WGS84 {
     my $target_dy = -1 * $parameter_ref->[3];
     my $target_dz = -1 * $parameter_ref->[4];
 
-    my $reference_major_axis = WGS84_MAJOR_AXIS;
-    my $reference_flattening = WGS84_FLATTENING;
+    my $reference_major_axis =   $ellipsoid_shapes{WGS84}[0];
+    my $reference_flattening = 1/$ellipsoid_shapes{WGS84}[2];
 
     return _transform($lat, $lon, $elevation,
                       $reference_major_axis, $reference_flattening,
@@ -1008,8 +991,8 @@ sub shift_ll_into_WGS84 {
     my $target_dy = $parameter_ref->[3];
     my $target_dz = $parameter_ref->[4];
 
-    my $reference_major_axis = WGS84_MAJOR_AXIS - $target_da;
-    my $reference_flattening = WGS84_FLATTENING - $target_df;
+    my $reference_major_axis =   $ellipsoid_shapes{WGS84}[0] - $target_da;
+    my $reference_flattening = 1/$ellipsoid_shapes{WGS84}[2] - $target_df;
 
     return _transform($lat, $lon, $elevation,
                       $reference_major_axis, $reference_flattening,
