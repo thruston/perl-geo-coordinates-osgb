@@ -128,32 +128,39 @@ but OSGB36 LL is what is shown around the edges of OS maps).
 
 ## Simplified interface
 
-grid_to_ll($e, $n, { geoid => "WGS84" or "OSGB36" or "EDM50" } )  default is WGS84 so that LL are usable with google etc
+grid_to_ll($e, $n, { shape => "WGS84" or "OSGB36" or "EDM50" } )  default is WGS84 so that LL are usable with google etc
                  
 
-grid_to_ll( { e => $x, n => $y, height => 0, datum = "Newlyn", geoid => "WGS84" } )
+grid_to_ll( { e => 9999, n => 9999, shape => "WGS84" } )
   if off grid: (0,0) .. (700000,1250000)
-     return unhappy
-  if geoid="WGS84"
-      if on OSTN02:
-         transform eno to xyz + set method = ostn02
-      else:
-         transform eno to xyz + set method = helmert
+     return unhappy - off grid
+  if shape is not known
+     return unhappy - unknown shape
 
-      transform x,y,z to ll
-  elsif geoid="OSGB36":
-      transform e,n,o to ll + set method = none or base?
+  if shape="WGS84"
+      if on OSTN02:
+         transform en0 to xyz + set method = ostn02
+      else:
+         transform en0 to xyz + set method = helmert
+  elsif shape='EDM50':
+      transform en0 to xyz + set method = helmert
+  elsif shape="OSGB36":
+      set e,n,0 to xyz + set method = none
   else:
-      return unhappy - unknown geoid
+      cannot happen
+
+  transform xyz to ll
       
   return happy + ll + method
 
-ll_to_grid( { lat => $lat, lon => $lon, geoid => "WGS84" } ) 
+ll_to_grid($lat, $lon, { shape => "WGS84" } ) 
+ll_to_grid( { lat => $lat, lon => $lon, shape => "WGS84" } ) 
 
-  if geoid is unknown:
+  if shape is unknown:
      return unhappy
 
-  transform ll to xyz using given geoid
+  
+  transform ll to xyz using given shape
 
   if on OSTN02:
      transform xyz to eno + set method = ostn02

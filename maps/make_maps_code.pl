@@ -236,9 +236,9 @@ for my $s (@series_to_build) {
 }
 
 
-open(my $perl, '>', '../lib/Geo/Coordinates/British_Maps.pm');
+open(my $perl, '>', '../lib/Geo/Coordinates/OSGB/Maps.pm');
 print $perl <<'END_PREAMBLE';
-package Geo::Coordinates::British_Maps;
+package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;

@@ -3,8 +3,9 @@ README
 Changes
 Makefile.PL
 lib/Geo/Coordinates/OSGB.pm
-lib/Geo/Coordinates/OSTN02.pm
-lib/Geo/Coordinates/British_Maps.pm
+lib/Geo/Coordinates/OSGB/Grid.pm
+lib/Geo/Coordinates/OSGB/Maps.pm
+lib/Geo/Coordinates/OSGB/Background.pod
 examples/bng_to_ll.pl
 examples/ll_to_bng.pl
 examples/zero-points.pl
