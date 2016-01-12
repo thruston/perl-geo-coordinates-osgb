@@ -1,3 +1,47 @@
+=head1 INTRODUCTION
+
+Geo::Coordinates::OSGB - Convert coordinates between Lat/Lon and the British National Grid
+
+An implementation of co-ordinate conversion for England, Wales, and Scotland
+based on formulae and data published by the Ordnance Survey of Great Britain.
+
+These modules will convert accurately between an OSGB national grid reference
+and coordinates given in latitude and longitude.  In Version 2.10 and above, the
+default ellipsoid model used in the de facto standard WGS84.  This means that you 
+can take latitude and longitude readings from your GPS receiver, or read them from 
+Wikipedia, or Google Earth, or your car's sat nav, and use this module to convert them 
+to an accurate British National grid reference for use with one of the Ordnance Survey's
+paper maps.  And vice versa, of course.
+
+
+
+and lat/lon coordinates based on the OSGB geoid model.  (For an explanation of
+what a geoid model is and why you should care, read the Theory section
+below.) The OSGB geoid model fits mainland Britain very well, but is rather
+different from the international WGS84 model that has rapidly become the de
+facto universal standard model thanks to the popularity of GPS devices and maps
+on the Internet.  So, if you are trying to translate from an OSGB grid
+reference to lat/lon coordinates that can be used in Google Earth, Wikipedia,
+or some other Internet based tool, you will need to do two transformations:
+first translate your grid ref into OSGB lat/lon; then nudge the result into
+WGS84.  Routines are provided to do both of these operations, but they are only
+approximate.  The inaccuracy of the approximation varies according to where you
+are in the country but may be as much as 5 metres in some areas.  See the note on accuracy 
+below for more details.
+
+To get more accurate results you need to combine this module with its companion
+L<Geo::Coordinates::OSTN02> which implements the transformation that now
+defines the relationship between GPS survey data based on WGS84 and the British
+National Grid.  Using this module you should be able to get results that are
+accurate to within a few millimetres, but it is slightly slower and requires
+more memory to run.  
+
+Note that the OSGB (and therefore this module) does not cover the whole of the
+British Isles, nor even the whole of the UK, in particular it covers neither
+the Channel Islands nor Northern Ireland.  The coverage that is included is
+essentially the same as the coverage provided by the OSGB "Landranger" 1:50000
+series maps.  The coverage of the OSTN02 data set is slightly smaller, as 
+the OS do not define the model for any points more than about 2km off shore.
 
 =head1 MAPS
 
