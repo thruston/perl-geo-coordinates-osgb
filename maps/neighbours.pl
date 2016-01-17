@@ -1,8 +1,8 @@
 use strict;
 use warnings;
 
-use Geo::Coordinates::OSGB qw{parse_grid format_grid_map};
-use Geo::Coordinates::British_Maps qw{%maps};
+use Geo::Coordinates::OSGB::Grid qw{parse_grid format_grid_map};
+use Geo::Coordinates::OSGB::Maps qw{%maps};
 use POSIX qw/floor ceil/;
 
 sub bounding_circle {

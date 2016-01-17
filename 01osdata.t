@@ -74,6 +74,9 @@ my $gotten = sprintf "%.7f %.7f", $lat, $lon;
 my $given  = sprintf "%.7f %.7f", $lat_given, $lon_given;
 is($gotten, $given, "Fixed pos from OS example");
 
+my $maxlate = my $maxlone = 0;
+my $minlate = my $minlone = 1e6;
+
 for my $k (sort { $test_input{$a}->[0] <=> $test_input{$b}->[0] }  keys %test_input ) {
     my ($lat,$lon) = @{$test_input{$k}}[0,1];
     my ($px,$py)   = @{$test_input{$k}}[3,4];
@@ -85,9 +88,53 @@ for my $k (sort { $test_input{$a}->[0] <=> $test_input{$b}->[0] }  keys %test_in
     my ($got_lat, $got_lon) = grid_to_ll($x,$y);
     my $lat_error = abs($lat-$got_lat);
     my $lon_error = abs($lon-$got_lon);
+    $maxlate = $lat_error if $lat_error > $maxlate;
+    $minlate = $lat_error if $lat_error < $minlate;
+    $maxlone = $lon_error if $lon_error > $maxlone;
+    $minlone = $lon_error if $lon_error < $minlone;
 
     is($got_grid, $given_grid, "ll_to_grid for Station $k" );
     ok($lat_error < 1.023E-6, sprintf "Lat for %s %.6g %.3g mm", $k, $lat, 1.1e8*$lat_error); # about 11 cm
     ok($lon_error < 1.385E-7, sprintf "Lon for %s %.6g %.3g mm", $k, $lon, 6.5e7*$lon_error); # about  9 mm
 }
+printf "%g < lat error < %g \n", $minlate*1.1e8, $maxlate*1.1e8;
+printf "%g < lon error < %g \n", $minlone*6.5e7, $maxlone*6.5e7;
+
+open my $mp, '>', "errors.mp";
+my $scale = 0.004725; # so that 120 km fits across A4 page
+
+
+print $mp <<'HEADER';
+prologues:=3;outputtemplate:="%j%c.eps";
+defaultfont := "phvr8r";
+beginfig(1);
+HEADER
+
+    print $mp "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
+    print $mp "input maps/gb-coast-large.mp;\n";
+    print $mp "drawoptions();\n";
+
+# meridians
+for my $lon (-9 .. 2 ) {
+printf $mp "draw (%g,%g) -- (%g,%g) withpen pencircle scaled 10 withcolor .8[blue,white];\n",
+    map {$_ * $scale } ( ll_to_grid(49.7,$lon), ll_to_grid(61,$lon) );
+}
+
+for my $k (keys %test_input) {
+    my ($lat,$lon) = @{$test_input{$k}}[0,1];
+    my ($e,$n)     = @{$test_input{$k}}[5,6];
+    
+    my ($got_lat, $got_lon) = grid_to_ll($e,$n);
+    my $lat_error = abs($lat-$got_lat);
+    my $lon_error = abs($lon-$got_lon);
+    
+    my $x = $e * $scale;
+    my $y = $n * $scale;
+    printf $mp "draw fullcircle scaled 28 shifted (%g,%g);\n", $x, $y;
+    printf $mp "fill fullcircle scaled 28 shifted (%g,%g) withcolor (%.5f[green,red] + %.5f[green,blue]);\n",
+            $x,  $y,  $lat_error/$maxlate, $lon_error/$maxlone;
+}
+print $mp <<'FOOTER';
+endfig; end.
+FOOTER
 

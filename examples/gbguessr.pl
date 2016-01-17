@@ -1,4 +1,5 @@
-use Geo::Coordinates::OSGB qw(random_grid grid_to_ll shift_ll_into_WGS84);
+use Geo::Coordinates::OSGB qw(grid_to_ll);
+use Geo::Coordinates::OSGB::Grid qw(random_grid);
 use Browser::Open qw(open_browser);
 
 sub format_grid_streetmap {
@@ -14,7 +15,7 @@ sub format_ll_googlemaps {
 
 my ($e, $n) = random_grid();
 
-my ($lat, $lon) = shift_ll_into_WGS84(grid_to_ll($e, $n));
+my ($lat, $lon) = grid_to_ll($e, $n);
 
 open_browser(format_grid_streetmap($e, $n));
 open_browser(format_ll_googlemaps($lat,$lon));

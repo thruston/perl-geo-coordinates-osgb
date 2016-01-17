@@ -380,4 +380,17 @@ can observe this for yourself, by taking the same walk on different days and
 comparing the GPS tracks; they will be a few metres apart even if you follow 
 exactly the same path.
 
+*** TODO: integrate me ***
+Note that the results from a hand-held consumer GPS unit are unlikely to be
+more accurate than plus or minus 5m even with perfect reception.  Most GPS
+devices can display the accuracy of the current fix you are getting, but at
+best this applies only to the latitude and longitude information they are
+getting using the WGS84 ellipsoid.  An additional layer of inaccuracy is 
+introduced if you set the unit to display the coordinates in OSGB grid format,
+because your unit will be using a quick approximation to transform the 
+coordinates instead of the full OSTN02 data set (which is used in these modules).
+
+matter what level of accuracy they may display.  The reasons for this are
+discussed below in the section on L<Theory>.
+
 =cut

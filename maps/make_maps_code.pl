@@ -1,4 +1,4 @@
-# Toby Thurston -- 21 Sep 2015 
+# Toby Thurston -- 13 Jan 2016 
 # compile the map tables into perl source code
 #
 use strict;
@@ -236,7 +236,7 @@ for my $s (@series_to_build) {
 }
 
 
-open(my $perl, '>', '../lib/Geo/Coordinates/OSGB/Maps.pm');
+open my $perl, '>', '../lib/Geo/Coordinates/OSGB/Maps.pm';
 print $perl <<'END_PREAMBLE';
 package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
@@ -266,6 +266,79 @@ for my $m (@sheets) {
     print $perl " };\n";
 }
 
-print $perl "1;\n";
+print $perl "1;\n\n";
+print $perl <<'POD';
+=pod
+
+=head1 Data for OSGB Maps
+
+This module exports no functions, but just two hashes of data.
+
+=head2 Hash C<%name_for_map_series>
+
+The keys are the single letter codes used for each map series.  
+The values are the descriptive names of each series.
+
+Currently (V2.10) we have
+
+  A => 'OS Landranger', 
+  B => 'OS Explorer',
+  C => 'OS One-Inch 7th series',
+  H => 'Harvey British Mountain maps',
+  J => 'Harvey Superwalker',
+
+=head2 Hash C<%maps>
+
+The keys are short identifiers for each sheet or inset.  Where a map has more than one side, or includes
+insets then, there will be a separate entry for each side and inset.
+
+The value for each key is another hash containing the following items
+
+=over 4
+
+=item bbox
+
+The bounding box of the sheet as a list of two pairs of coordinates (in metres
+from the grid origin)
+
+=item polygon
+  
+A list of pairs of coordinates (in metres from grid origin) that define the
+corners of the sheet.  The list starts at the SW corner (approximately, on some
+sheets it's not entirely obvious where to start), and works round
+anticlockwise.  In all cases the last pair is the same as the first pair.
+
+=item area 
+
+The calculated area of the sheet in square kilometres
+
+=item series
+
+A single letter series identifier -- this will be one of the keys from the
+"name_for_map_series" hash
+
+=item number
+
+The identifier for this map within the series, not including any suffix for a
+sheet or an inset.  The two sides of a single map have the same number.  The
+number is not always an integer - Outdoor Leisure maps are designated "OL14"
+etc.  Those maps known by two numbers have a "number" consisting of both
+numbers divided by a "/"; such as "418/OL60" in the Explorer series.
+
+=item parent
+
+The key of the parent map for an inset.  Main sheets of a map, will have
+"parent" equal to their own key.
+
+=item title
+
+The title of the map.  Different sheets and insets from the same map will have
+the same title.
+
+=back
+
+=cut
+
+POD
 close $perl;
 warn sprintf "Wrote %d sheet definitions to maps module\n", scalar @sheets;
