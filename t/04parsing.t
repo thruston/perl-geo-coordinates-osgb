@@ -1,35 +1,74 @@
 # Toby Thurston -- 14 Jan 2016 
 
-# test grid ref parsing and ll parsing
+# test grid ref parsing 
 
-use Test::More tests=>16;
+use Test::More tests=>59;
 
 use Geo::Coordinates::OSGB::Grid qw(
-    parse_trad_grid
-    parse_GPS_grid
     parse_grid
-    parse_landranger_grid
-    format_grid_trad
 );
 
-is( parse_grid('176/238714') ,  parse_landranger_grid(176,238,714),     'Parse sheets');
-is( parse_grid('TA123567')   ,  parse_trad_grid('TA123567'),            'Parse trad1');
-is( parse_grid('TA123567')   ,  parse_trad_grid('TA 123 567'),          'Parse trad1a');
-is( parse_grid('TA123567')   ,  parse_trad_grid('TA','123567'),         'Parse trad2');
-is( parse_grid('TA123567')   ,  parse_trad_grid('TA',123,567),          'Parse trad3');
-is( parse_grid(1)            ,  parse_landranger_grid(1),                    'Parse sheet1');
-is( parse_grid(1)            ,  format_grid_trad(429000,1180000) ,      'Parse formatting');
-is( parse_grid(204)          ,  format_grid_trad(172000,14000) ,        'Parse formatting');
+is( sprintf("%d %d", parse_grid('TA15')),            '510000 450000',   '10km square');                    
+is( sprintf("%d %d", parse_grid('TA1256')),          '512000 456000',   '1km square');                     
+is( sprintf("%d %d", parse_grid('TA123567')),        '512300 456700',   '100m square');                    
+is( sprintf("%d %d", parse_grid('TA12345678')),      '512340 456780',   '10m square');                     
+is( sprintf("%d %d", parse_grid('TA1234567890')),    '512345 467890',   '1m square');                      
+is( sprintf("%d %d", parse_grid('TA 1 5')),          '510000 450000',   '10km square');                    
+is( sprintf("%d %d", parse_grid('TA 12 56')),        '512000 456000',   '1km square');                     
+is( sprintf("%d %d", parse_grid('TA 123 567')),      '512300 456700',   '100m square');                    
+is( sprintf("%d %d", parse_grid('TA 1234 5678')),    '512340 456780',   '10m square');                     
+is( sprintf("%d %d", parse_grid('TA 12345 67890')),  '512345 467890',   '1m square');                      
+is( sprintf("%d %d", parse_grid('TA', '123 567')),   '512300 456700',   '2 arg 100m square');              
+is( sprintf("%d %d", parse_grid('TA', '123567')),    '512300 456700',   '2 arg 100m square');              
+is( sprintf("%d %d", parse_grid('TA', 123,567)),     '512300 456700',   '3 arg 100m square');              
+is( sprintf("%d %d", parse_grid('TA', 12345,7, {figs=>5})),     '512345 400007',   '3 arg 100m square');              
+is( sprintf("%d %d", parse_grid('TA', '123', '007')),     '512300 400700',   '3 arg 100m square');              
+is( sprintf("%d %d", parse_grid('SV9055710820')),    '90557 10820',     'St Marys lifeboat station');      
+is( sprintf("%d %d", parse_grid('HU','4795841283')),    '447958 1141283',  'Lerwick lifeboat station');       
+is( sprintf("%d %d", parse_grid('WE950950')),        '-5000 -5000',     'At sea, off the Scillies');       
+is( sprintf("%d %d", parse_grid('176/224711')),      '522400 171100',   "Caesar's Camp");                  
+is( sprintf("%d %d", parse_grid('A:164/352194')),    '435200 219400',   "Charlbury Station");              
+is( sprintf("%d %d", parse_grid('B:OL43E/914701')),  '391400 570100',   "Chesters Bridge");                
+is( sprintf("%d %d", parse_grid(1)),                 '429000 1180000',  'Landranger Sheet 1 SW Corner');   
+is( sprintf("%d %d", parse_grid(204)),               '172000 14000',    'Landranger Sheet 204 SW Corner'); 
+is( sprintf("%d %d", parse_grid('B:101')),           '80000 3000',      'Explorer Sheet 101 SW Corner');   
+is( sprintf("%d %d", parse_grid(164,513,62)),        '451300 206200',   'Carfax');                         
 
+is( parse_grid('TA15'),              '510000 450000',   'scalar context: 10km square');                    
+is( parse_grid('TA1256'),            '512000 456000',   'scalar context: 1km square');                     
+is( parse_grid('TA123567'),          '512300 456700',   'scalar context: 100m square');                    
+is( parse_grid('TA12345678'),        '512340 456780',   'scalar context: 10m square');                     
+is( parse_grid('TA1234567890'),      '512345 467890',   'scalar context: 1m square');                      
+is( parse_grid('TA 1 5'),            '510000 450000',   'scalar context: 10km square');                    
+is( parse_grid('TA 12 56'),          '512000 456000',   'scalar context: 1km square');                     
+is( parse_grid('TA 123 567'),        '512300 456700',   'scalar context: 100m square');                    
+is( parse_grid('TA 1234 5678'),      '512340 456780',   'scalar context: 10m square');                     
+is( parse_grid('TA 12345 67890'),    '512345 467890',   'scalar context: 1m square');                      
+is( parse_grid('TA', '123 567'),     '512300 456700',   'scalar context: 2 arg 100m square');              
+is( parse_grid('TA', '123567'),      '512300 456700',   'scalar context: 2 arg 100m square');              
+is( parse_grid('TA', 123,567),       '512300 456700',   'scalar context: 3 arg 100m square');              
+is( parse_grid('SV9055710820'),      '90557 10820',     'scalar context: St Marys lifeboat station');      
+is( parse_grid('HU4795841283'),      '447958 1141283',  'scalar context: Lerwick lifeboat station');       
+is( parse_grid('WE950950'),          '-5000 -5000',     'scalar context: At sea, off the Scillies');       
+is( parse_grid('176/224711'),        '522400 171100',   "scalar context: Caesar's Camp");                  
+is( parse_grid('A:164/352194'),      '435200 219400',   "scalar context: Charlbury Station");              
+is( parse_grid('B:OL43E/914701'),    '391400 570100',   "scalar context: map Chesters Bridge");            
+is( parse_grid('B:OL43E 914 701'),    '391400 570100',   "scalar context: map Chesters Bridge");            
+is( parse_grid('B:OL43E','914701'),  '391400 570100',   "scalar context: map 2-arg Chesters Bridge");      
+is( parse_grid('B:OL43E',914,701),   '391400 570100',   "scalar context: map 3-arg Chesters Bridge");      
+is( parse_grid(1),                   '429000 1180000',  'scalar context: Landranger Sheet 1 SW Corner');   
+is( parse_grid(204),                 '172000 14000',    'scalar context: Landranger Sheet 204 SW Corner'); 
+is( parse_grid('B:101'),             '80000 3000',      'scalar context: Explorer Sheet 101 SW Corner');   
+is( parse_grid(164,513,62),          '451300 206200',   'scalar context: Carfax');                         
 
 ok( (($e,$n) = parse_grid('TQ 234 098')) && $e == 523_400 && $n == 109_800 , "Help example 1 $e $n");
 ok( (($e,$n) = parse_grid('TQ234098')  ) && $e == 523_400 && $n == 109_800 , "Help example 2 $e $n");
 ok( (($e,$n) = parse_grid('TQ',234,98) ) && $e == 523_400 && $n == 109_800 , "Help example 3 $e $n");
-
+##
 ok( (($e,$n) = parse_grid('TQ 23451 09893')) && $e == 523_451 && $n == 109_893 , "Help example 4 $e $n");
 ok( (($e,$n) = parse_grid('TQ2345109893')  ) && $e == 523_451 && $n == 109_893 , "Help example 5 $e $n");
-ok( (($e,$n) = parse_grid('TQ',23451,9893) ) && $e == 523_451 && $n == 109_893 , "Help example 6 $e $n");
-
+ok( (($e,$n) = parse_grid('TQ',23451,9893, {figs => 5}) ) && $e == 523_451 && $n == 109_893 , "Help example 6 $e $n");
+##
 # You can also get grid refs from individual maps.
 # Sheet between 1..204; gre & grn must be 3 or 5 digits long
 

@@ -38,65 +38,6 @@ use constant MAJOR_GRID_SQ_EASTING_OFFSET  => 2 * MAJOR_GRID_SQ_SIZE;
 use constant MAJOR_GRID_SQ_NORTHING_OFFSET => 1 * MAJOR_GRID_SQ_SIZE;
 use constant MAX_GRID_SIZE => MINOR_GRID_SQ_SIZE * length GRID_SQ_LETTERS;
 
-sub _get_grid_ref {
-    my $s = "@_";
-    my $S = uc $s;
-    return if 0 > index GRID_SQ_LETTERS, substr $S, 0, 1;
-    return if 0 > index GRID_SQ_LETTERS, substr $S, 1, 1;
-    my $sq = substr $S, 0, 2;
-    my $numbers = $S =~ tr/0-9//cdr;
-    my $len = length $numbers;
-    return if $len % 2;
-    return unless 0 < $len && $len <= 10;
-    my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;
-    my $n = reverse sprintf "%05d", scalar reverse substr $numbers,    $len/2;
-    return ($sq, $e, $n);
-}
-
-sub parse_grid {
-    my $s = "@_";
-    
-    my ($sq, $e, $n) = _get_grid_ref($s);
-    
-    if ( defined $sq ) {
-        my ($E, $N) = _sq_to_grid($sq);
-        return ($E+$e, $N+$n);
-    }
-
-    if ( $s =~ m{\A ((?:A:)\d{1,3}) \D+ (\d{3}) \D? (\d{3}) \Z}xsm ) { # sheet/eee/nnn etc
-        return parse_landranger_grid($1, $2, $3)
-    }
-    if ( $s =~ m{\A \d{1,3} \Z}xsm && $s < 205 ) {  # just a landranger sheet
-        return parse_landranger_grid($s)
-    }
-    if ( $s =~ m{\A (\d+(?:\.\d+)?) \s+ (\d+(?:\.\d+)?) \Z}xsmio ) { # eee nnn
-        return ($1, $2)
-    }
-
-    _bail_out(wanted => "a grid reference", supplied => $s);
-}
-
-*parse_trad_grid = \&parse_grid;
-*parse_GPS_grid  = \&parse_grid;
-
-sub parse_landranger_grid {
-    my ($sheet, $e, $n) = @_;
-
-    if ( !defined $sheet ) {
-        return 
-    }
-
-    if ( defined $maps{$sheet} ) {
-        return parse_map_grid($sheet, $e, $n)
-    }
-    
-    if ( defined $maps{"A:$sheet"} ) {
-        return parse_map_grid("A:$sheet", $e, $n)
-    }
-
-    _bail_out(wanted => "a Landranger sheet number", supplied => $sheet);
-}
-
 # Produce a random GR 
 # A simple approach would pick 0 < E < 700000 and 0 < N < 1250000
 # but that way many GRs produced would be in the sea, so pick a random
@@ -126,52 +67,105 @@ sub random_grid {
 }
 
 sub format_grid {
-    my ($e, $n, $options) = ( @_, { form => 'SS EEE NNN' } );
-    my $form = uc $options->{form} || 'TRAD';
+    my ($easting, $northing, $options) = @_;
+
+    my $form      = exists $options->{form}   ? uc $options->{form}   : 'SS EEE NNN';
+    my $with_maps = exists $options->{maps}   ?    $options->{maps}   : 0;
+    my $map_keys  = exists $options->{series} ? uc $options->{series} : join '', sort keys %name_for_map_series;
+
+    my $sq = _grid_to_sq($easting,$northing);
+    my ($e,$n) = map { int } map { $_ % MINOR_GRID_SQ_SIZE } ($easting, $northing);
+
+    my @sheets = ();
+    if ( $with_maps ) {
+        while (my ($k,$m) = each %maps) {
+            next unless index($map_keys, substr($k,0,1)) > -1;
+            if ($m->{bbox}->[0][0] <= $easting  && $easting  < $m->{bbox}->[1][0]
+                && $m->{bbox}->[0][1] <= $northing && $northing < $m->{bbox}->[1][1]) {
+                my $w = _winding_number($easting, $northing, $m->{polygon});
+                if ($w != 0) { 
+                    push @sheets, $k;
+                }
+            }
+        }
+        @sheets = sort @sheets;
+    } 
+
     if ( $form eq 'TRAD' ) {
-        return format_grid_trad($e, $n)
+        $form = 'SS EEE NNN';
     }
     elsif ( $form eq 'GPS' ) {
-        return format_grid_GPS($e, $n)
+        $form = 'SS EEEEE NNNNN';
     }
-    elsif ( $form eq 'MAP' ) {
-        return format_grid_map($e, $n, $options)
-    }
-    elsif ( $form eq 'LANDRANGER' ) {
-        return format_grid_landranger($e, $n)
-    }
-    elsif ( $form =~ m{ \A (S{1,2})(\s*)(E{1,5})(\s*)(N{1,5}) \Z }iosxm ) {
-        my $sq;
-        ($sq, $e, $n) = format_grid_GPS($e, $n);
-        $e /= 10**(5 - length $3);
-        $n /= 10**(5 - length $5);
-        my $gr = sprintf "%s%s%0d%s%0d", $sq, $2, $e, $4, $n;
+
+    if ( my ($space_a, $e_spec, $space_b, $n_spec) = $form =~ m{ \A S{1,2}(\s*)(E{1,5})(\s*)(N{1,5}) \Z }iosxm ) {
+        my $e_len = length $e_spec;
+        my $n_len = length $n_spec;
+        $e = int($e / 10**(5 - $e_len));
+        $n = int($n / 10**(5 - $n_len));
+
+        if ( wantarray ) {
+            return ($sq, $e, $n, @sheets)
+        }
+
+        my $gr = sprintf "%s%s%0.*d%s%0.*d", $sq, $space_a, $e_len, $e, $space_b, $n_len, $n;
         $gr =~ s/\s+/ /g;
-        return $gr;
+
+        if ( $with_maps ) {
+            if ( @sheets ) {
+                return sprintf '%s on %s', $gr, join ', ', @sheets; 
+            }
+            else {
+                return sprintf '%s is not on any maps in series %s', $gr, $map_keys;
+            }
+        }
+        else {
+            return $gr;
+        }
     }
-    else {
-        return ($e, $n)
-    }
+
+    croak "Format $form was not recognized";
 }
 
 sub format_grid_trad {
-    my $e = shift;
-    my $n = shift;
-    my $sq;
-
-    ($sq, $e, $n) = format_grid_GPS($e, $n);
-    ($e,$n) = map { int $_/100 } ($e,$n);
-
-    return ($sq, $e, $n) if wantarray;
-    return sprintf '%s %03d %03d', $sq, $e, $n;
+    my ($easting, $northing) = @_;
+    return format_grid($easting, $northing, { form => 'SS EEE NNN' })
 }
 
 sub format_grid_GPS {
-    my ($e, $n) = @_;
-    my $sq = _grid_to_sq($e,$n);
-    ($e,$n) = map { int } map { $_ % MINOR_GRID_SQ_SIZE } ($e, $n);
-    return ($sq, $e, $n) if wantarray;
-    return sprintf '%s %05d %05d', $sq, $e, $n;
+    my ($easting, $northing) = @_;
+    return format_grid($easting, $northing, { form => 'SS EEEEE NNNNN' })
+}
+
+sub format_grid_map {
+    my ($easting, $northing, $options) = @_;
+    if ( defined $options ) {
+        $options->{maps} = 1
+    }
+    else {
+        $options = { maps => 1 }
+    }
+    return format_grid($easting, $northing, $options)
+}
+
+sub format_grid_landranger {
+    my ($easting,$northing) = @_;
+
+    my ($sq, $e, $n, @sheets) = format_grid($easting, $northing, { form => 'SS EEE NNN', maps => 1, series => 'A' });
+
+    for my $s (@sheets) {
+        $s =~ s/\AA://;
+    }
+    
+    return ($sq, $e, $n, @sheets) if wantarray;
+
+    if (!@sheets )    { return sprintf '%s %03d %03d is not on any Landranger sheet', $sq, $e, $n }
+    if ( @sheets==1 ) { return sprintf '%s %03d %03d on Landranger sheet %s'        , $sq, $e, $n, $sheets[0] }
+    if ( @sheets==2 ) { return sprintf '%s %03d %03d on Landranger sheets %s and %s', $sq, $e, $n, @sheets }
+
+    my $phrase = join ', ', @sheets[0..($#sheets-1)], "and $sheets[-1]";
+    return sprintf '%s %03d %03d on Landranger sheets %s', $sq, $e, $n, $phrase;
+
 }
 
 sub _get_grid_letter_offsets {
@@ -209,86 +203,112 @@ sub _grid_to_sq {
        substr(GRID_SQ_LETTERS, $minor_index, 1);
 }
 
-sub format_grid_landranger {
-    my ($easting,$northing) = @_;
-
-    my ($sq, $e, $n, @sheets) = format_grid_map($easting, $northing, { series_keys => 'A' });
-
-    for my $s (@sheets) {
-        $s =~ s/\AA://;
-    }
-    
-    return ($sq, $e, $n, @sheets) if wantarray;
-
-    if (!@sheets )    { return sprintf '%s %03d %03d is not on any Landranger sheet', $sq, $e, $n }
-    if ( @sheets==1 ) { return sprintf '%s %03d %03d on Landranger sheet %s'        , $sq, $e, $n, $sheets[0] }
-    if ( @sheets==2 ) { return sprintf '%s %03d %03d on Landranger sheets %s and %s', $sq, $e, $n, @sheets }
-
-    my $phrase = join ', ', @sheets[0..($#sheets-1)], "and $sheets[-1]";
-    return sprintf '%s %03d %03d on Landranger sheets %s', $sq, $e, $n, $phrase;
-
+sub _get_grid_ref {
+    my $s = shift;
+    my $S = uc $s;
+    return if 0 > index GRID_SQ_LETTERS, substr $S, 0, 1;
+    return if 0 > index GRID_SQ_LETTERS, substr $S, 1, 1;
+    my $sq = substr $S, 0, 2;
+    my ($e, $n) = _get_eastnorthings($S);
+    return ($sq, $e, $n);
 }
 
-sub format_grid_map { 
-    my ($e, $n, $options) = @_;
-    my $wanted_keys = defined $options->{series_keys} 
-                    ? $options->{series_keys}
-                    : join '', sort keys %name_for_map_series;
-    my @sheets = ();
-    while (my ($k,$m) = each %maps) {
-        next unless index($wanted_keys, substr($k,0,1)) > -1;
-        if ($m->{bbox}->[0][0] <= $e && $e < $m->{bbox}->[1][0]
-         && $m->{bbox}->[0][1] <= $n && $n < $m->{bbox}->[1][1]) {
-            my $w = _winding_number($e, $n, $m->{polygon});
-            if ($w != 0) { 
-                push @sheets, $k;
-            }
+sub _get_eastnorthings {
+    my $S = shift;
+    my $numbers = $S =~ tr/0-9//cdr;
+    my $len = length $numbers;
+    croak "No easting or northing found" unless $len;
+    croak "Easting and northing have different lengths" if $len % 2;
+    croak "Too many digits" if $len > 10;
+    my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;
+    my $n = reverse sprintf "%05d", scalar reverse substr $numbers,    $len/2;
+    return ($e, $n)
+}
+
+sub parse_grid {
+
+    my $options = 'HASH' eq ref $_[-1] ? pop @_ : { };
+
+    my $figs = exists $options->{figs} ? $options->{figs} : 3;
+
+    my @out;
+
+    my $s = @_ < 3 ? "@_" : sprintf "%s %0.*d %0.*d", $_[0], $figs, $_[1], $figs, $_[2];
+
+    my ($sq, $e, $n) = _get_grid_ref($s);
+    
+    if ( defined $sq ) {
+        my ($E, $N) = _sq_to_grid($sq);
+        @out = ($E+$e, $N+$n);
+        return wantarray ? @out : "@out";
+    }
+
+    my $sheet;
+    if (($sheet, $e, $n) = $s =~ m{\A (\S+) \D+ (\d{3}) \D? (\d{3}) \Z}xsm) { # sheet/eee/nnn etc
+        if ( exists $maps{$sheet} ) { 
+           return parse_map_grid($sheet, $e, $n)
         }
     }
-    my $sq;
-    ($sq, $e, $n) = format_grid_trad($e,$n);
-    @sheets = sort @sheets;
 
-    return ($sq, $e, $n, @sheets) if wantarray;
+    if ( exists $maps{$s} ) {
+        return parse_map_grid($s)
+    }
 
-    if (!@sheets )    { return sprintf '%s %03d %03d is not on any maps in series %s', $sq, $e, $n, $options->{series_keys}; }
-    else              { return sprintf '%s %03d %03d on %s', $sq, $e, $n, join ', ', @sheets; }
-    
+    if ( ($sheet, $e, $n) = $s =~ m{\A (\d+) \D+ (\d{3}) \D? (\d{3}) \Z}xsm ) { # sheet/eee/nnn etc
+        return parse_landranger_grid($sheet, $e, $n)
+    }
+
+    if ( $s =~ m{\A \d{1,3} \Z}xsm ) {  # just a landranger sheet number
+        return parse_landranger_grid($s)
+    }
+
+    if ( @out = $s =~ m{\A (\d+(?:\.\d+)?) \s+ (\d+(?:\.\d+)?) \Z}xsmio ) { # eee nnn
+        return wantarray ? @out : "@out";
+    }
+
+    _bail_out(wanted => "a grid reference", supplied => $s);
 }
+
+*parse_trad_grid = \&parse_grid;
+*parse_GPS_grid  = \&parse_grid;
+
+sub parse_landranger_grid {
+    my ($sheet, $e, $n) = @_;
+
+    if ( defined $maps{$sheet} ) {
+        return parse_map_grid($sheet, $e, $n)
+    }
+    
+    if ( defined $maps{"A:$sheet"} ) {
+        return parse_map_grid("A:$sheet", $e, $n)
+    }
+
+    _bail_out(wanted => "a Landranger sheet number", supplied => $sheet);
+}
+
 
 sub parse_map_grid {
     my ($sheet, $e, $n) = @_;
 
-    return if !defined wantarray;
-
-    return if !defined $sheet;
-
-    if ( !defined $maps{$sheet} ) { 
-        _bail_out(wanted => "a defined sheet identifier", supplied => $sheet) 
+    if ( ! (defined $sheet && exists $maps{$sheet}) ) { 
+        _bail_out(wanted => "a known sheet identifier", supplied => $sheet) 
     }
 
-    my @ll = @{$maps{$sheet}->{polygon}[0]};
+    my @ll_corner = @{$maps{$sheet}->{polygon}[0]};
 
-    if ( !defined $e )          { return wantarray ? @ll : format_grid_trad(@ll) }
-    if ( !defined $n )          { $n = -1 }
+    if ( ! defined $e ) { return wantarray ? @ll_corner : "@ll_corner" }
 
-    SWITCH: {
-        if ( $e =~ m{\A (\d{3}) (\d{3}) \Z}x && $n == -1 ) { ($e, $n) = ($1*100, $2*100) ; last SWITCH }
-        if ( $e =~ m{\A\d{3}\Z}x && $n =~ m{\A\d{3}\Z}x )  { ($e, $n) = ($e*100, $n*100) ; last SWITCH }
-        if ( $e =~ m{\A\d{5}\Z}x && $n =~ m{\A\d{5}\Z}x )  { ($e, $n) = ($e*1,   $n*1  ) ; last SWITCH }
-        _bail_out(wanted => "a grid reference", supplied => "@_");
-    }
+    ($e, $n) = _get_eastnorthings(  ! defined $n ? "$e" : "$e$n" );
 
-    $e = $ll[0] + ($e-$ll[0]) % MINOR_GRID_SQ_SIZE;
-    $n = $ll[1] + ($n-$ll[1]) % MINOR_GRID_SQ_SIZE;
+    $e = $ll_corner[0] + ($e-$ll_corner[0]) % MINOR_GRID_SQ_SIZE;
+    $n = $ll_corner[1] + ($n-$ll_corner[1]) % MINOR_GRID_SQ_SIZE;
 
     my $w = _winding_number($e, $n, $maps{$sheet}->{polygon});
-
     if ($w == 0) {
-        croak "Grid reference ($e,$n) is not on sheet $sheet";
+        croak sprintf "Grid reference %s is not on sheet %s", scalar format_grid($e,$n), $sheet;
     }
 
-    return ($e, $n);
+    return wantarray ? ($e, $n) : "$e $n";
 }
 
 # is $pt left of $a--$b?
@@ -324,19 +344,21 @@ sub _bail_out {
 
 1;
 
+__END__
+
 =pod
 
 =head1 Functions for parsing and formatting grid references
 
 This module provides useful functions for parsing and formatting OSGB grid 
-references.  Some detailed background is given in "background.pod" and on 
+references.  Some detailed background is given in C<background.pod> and on 
 the OS web site.  
 
 =head2 Routines to generate grid references
 
 =over 4
 
-=item random_grid([sheet1, sheet2, ...])
+=item C<random_grid([sheet1, sheet2, ...])>
 
 Takes an optional list of map sheet identifiers, and returns a random easting
 and northing for some place covered by one of the maps.  There's no guarantee
@@ -344,16 +366,16 @@ that the point will not be in the sea, but it will be within the bounding box
 of one of the maps. 
 
 If you omit the list of sheets, then one of map sheets defined in
-Geo::Coordinates::OSGB::Maps will be picked at random.  
+L<Geo::Coordinates::OSGB::Maps> will be picked at random.  
 
 As a convenience whole numbers in the range 1..204 will be interpreted
-as Landranger sheets, as if you had written 'A:1', 'A:2', etc. 
+as Landranger sheets, as if you had written C<A:1>, C<A:2>, etc. 
 
 Any sheet identifiers in the list that are not defined in
-Geo::Coordinates::OSGB::Maps will be (silently) ignored.  
+L<Geo::Coordinates::OSGB::Maps> will be (silently) ignored.  
 
 The easting and northing are returned as meters from the grid origin, so that
-they are suitable for input to any of the c<format_grid> routines.
+they are suitable for input to the C<format_grid> routines.
 
 =back
 
@@ -361,141 +383,241 @@ they are suitable for input to any of the c<format_grid> routines.
 
 =over 4
 
-=item format_grid_trad(e,n)
+=item C<format_grid(e, n)>
 
 Formats an (easting, northing) pair into traditional `full national grid
 reference' with two letters and two sets of three numbers, like this
-`SU 387 147'.  If you want to remove the spaces, just apply C<s/\s//g> to it.
+`SU 387 147'.  
 
-    $gridref = format_grid_trad(438710.908, 114792.248); # SU 387 147
-    $gridref =~ s/\s//g;                                 # SU387147
+    $gridref = format_grid(438710.908, 114792.248); # SU 387 147
 
 If you want the individual components call it in a list context.
 
-    ($sq, $e, $n) = format_grid_trad(438710.908, 114792.248); # ('SU', 387, 147)
+    ($sq, $e, $n) = format_grid(438710.908, 114792.248); # ('SU', 387, 147)
 
-This provide a second way to get the reference without spaces:
-
-    $gridref = sprintf "%s%03d%03d", format_grid_trad(438710.908, 114792.248); 
-
-Note that rather than being rounded, the easting and northing are truncated to
+Note that rather than being rounded, the easting and northing are *truncated* to
 hectometers (as the OS system demands), so the grid reference refers to the
-lower left corner of the relevant 100m square.
+lower left corner of the relevant 100m square.  The system is described below the
+legend on all OS Landranger maps.
 
-=over 4
+=item C<format_grid(e, n, {form =E<gt> 'SS EEE NNN', maps =E<gt> 0, series =E<gt> 'ABCHJ'})>
+
+The format grid routine takes an optional third argument to control 
+the form of grid reference returned.  This should be a hash reference with 
+one or more of the keys shown above, with the default values.
+
+=over 8
+
+=item form  
+
+Controls the format of the grid reference.  With C<$e, $n> set as above:
+
+    Format          produces        Format            produces       
+    ----------------------------------------------------------------
+    'SSEN'          SU31            'SS E N'          SU 3 1         
+    'SSEENN'        SU3814          'SS EE NN'        SU 38 14       
+    'SSEEENNN'      SU387147        'SS EEE NNN'      SU 387 147     
+    'SSEEEENNNN'    SU38711479      'SS EEEE NNNN'    SU 3871 1479 
+    'SSEEEEENNNNN'  SU3871014792    'SS EEEEE NNNNN'  SU 38710 14792 
+
+There are two other special formats:
+
+     form => 'TRAD' is equivalent to form => 'SS EEE NNN'
+     form => 'GPS'  is equivalent to form => 'SS EEEEE NNNNN'
+
+In a list context, this option means that the individual components are returned
+appropriately truncated as shown.  So with C<SS EEE NNN> you get back C<('SU', 387, 147)>
+and B<not> C<('SU', 387.10908, 147.92248)>.  The format can be given as upper case or lower
+case or a mixture.
+
+=item maps
+
+Controls whether to include a list of map sheets after the grid reference.
+Set it to 1 (or any true value) to include the list, and to 0 (or any false value) 
+to leave it out.  The default is C<maps =E<gt> 0>.
+
+In a scalar context you get back a string like this:
+
+    SU 387 147 on A:196, B:OL22E, C:180
+
+In a list context you get back a list like this:
+    
+    ('SU', 387, 147, A:196, B:OL22E, C:180)
+
+=item series
+
+This option is only used when C<maps> is true.  It controls which series of maps to include in the list of 
+sheets.  Currently the series included are:
+
+C<A> : OS Landranger 1:50000 maps
+
+C<B> : OS Explorer 1:25000 maps (some of these are designated as `Outdoor Leisure' maps)
+
+C<C> : OS Seventh Series One-Inch 1:63360 maps
+
+C<H> : Harvey British Mountain maps — mainly at 1:40000
+
+C<J> : Harvey Super Walker maps — mainly at 1:25000
+
+so if you only want Explorer maps use: C<series =E<gt> 'B'>, and if you want only Explorers and Landrangers
+use: C<series =E<gt> 'AB'>, and so on. 
+
+Note that the numbers returned for the Harvey maps have been invented for the purposes
+of this module.  They do not appear on the maps themselves; instead the maps have titles.
+You can use the numbers returned as an index to the data in C<Geo::Coordinates::OSGB::Maps>
+to find the appropriate title.
+
+=back 4
+
+=item format_grid_trad(e,n)
+
+Equivalent to C<format_grid(e,n, { form =E<gt> 'trad' })>.
 
 =item format_grid_GPS(e,n)
 
-Users who have bought a GPS receiver may initially have been puzzled by the
-unfamiliar format used to present coordinates in the British national grid format.
-My first Garmin Legend C used to show this sort of thing in the display.
-
-    TQ 23918
-   bng 00972
-
-and in the track logs the references look like this C<TQ 23918 00972>.
-
-These are just the same as the references described on the OS sheets, except
-that the units are metres rather than hectometres, so you get five digits in
-each of the easting and northings instead of three.  So in a scalar context
-C<format_grid_GPS()> returns a string like this:
-
-    $gridref = format_grid_GPS(533000, 180000); # TQ 33000 80000
-
-If you call it in a list context, you will get a list of square, easting, and
-northing, with the easting and northing as metres within the grid square.
-
-    ($sq, $e, $n) = format_grid_GPS(533000, 180000); # (TQ,33000,80000)
-
-Note that rather than being rounded, the easting and northing are truncated to
-meters for consistency with traditional grid references. Grid references in
-GPS form therefore refer to the lower left corner of the relevant 1m square.
+Equivalent to C<format_grid(e,n, { form =E<gt> 'gps' })>.
 
 =item format_grid_map(e,n)
 
-This routine returns the grid reference formatted in the same way as
-C<format_grid_trad>, but it also appends a list of maps on which the point
-appears.  Note that the list will be empty if the grid point does not appear on
-any of the defined maps.  This can happen with points in the sea, or in other
-areas not covered by the any of the British OS maps (such as Northern Ireland
-or the Channel Islands).  In most cases the list will contain more than one map
--- this is because (a) there are several series of maps defined and (b) many of
-the sheets in each series overlap at the edges.
-
-In a list context you will get back a list like this:  (square, easting,
-northing, sheet) or (square, easting, northing, sheet1, sheet2) etc.  There are
-a few places where three sheets overlap, and one corner of Herefordshire which
-appears on four Landranger maps (sheets 137, 138, 148, and 149).  If the GR is
-not on any sheet, then the list of sheets will be empty.
-
-In a scalar context you will get back the same information in a helpful string
-form like this "NN 241 738 on A:41, B:392, C:47".  Note that the easting and
-northing will have been truncated to the normal hectometre three digit form.
-The idea is that you'll use this form for people who might actually want to
-look up the grid reference on the given map sheet, and the traditional GR form
-is quite enough accuracy for that purpose.
-
-If you only want maps from a subset of the defined series, then you can pass 
-an optional argument to control which series are included, like this:
-
-   my $gr = format_grid_map(e,n, {series_wanted => 'AB' });
-
-When called like this the list of maps returned with only include sheets from 
-series A and B (which are defined to the OS Landrangers and Explorers).
+Equivalent to C<format_grid(e,n, { maps =E<gt> 1 })>.
 
 =item format_grid_landranger(e,n)
 
-An alternative to "format_grid_,map(e,n,{series_wanted => 'A'})" except 
-that the leading "A:" will be stripped from any sheet names returned.
+Equivalent to
+
+   format_grid(e,n,{ form => 'ss eee nnn', maps => 1, series => 'A' }) 
+
+except that the leading "A:" will be stripped from any sheet names returned, and you 
+get a slightly fancier set of phrases in a scalar context depending on how many 
+map numbers are in the list of sheets.
 
 =back
+
+For more examples of formatting look at the test files.
 
 =head2 Routines to extract (easting, northing) pairs from grid references
 
 =over 4
 
+=item parse_grid
+
+The C<parse_grid> routine extracts a (easting, northing) pair from a string, 
+or a list of arguments, representing a grid reference.  The pair returned
+are in units of metres from the false origin of the grid, so that you can pass them to 
+C<format_grid> or C<grid_to_ll>.
+
+The arguments should be in one of the following forms
+
+=over 8
+
+=item A single string representing a grid reference
+
+  String                        ->  interpreted as   
+  --------------------------------------------------
+  parse_grid("TA 123 678")      ->  (512300, 467800) 
+  parse_grid("TA 12345 67890")  ->  (512345, 467890) 
+
+The spaces are optional in all cases.  You can also refer to a 10km square 
+as "TA16" which will return C<(510000, 460000)>, or to a kilometre
+square as "TA1267" which gives C<(512000, 467000)>. For completeness you can 
+also use "TA 1234 6789" to refer to a decametre square C<(512340, 467890)> but 
+you might struggle to find a use for that one.
+
+=item A list representing a grid reference
+
+  List                             ->  interpreted as   
+  -----------------------------------------------------
+  parse_grid('TA', '123 678')      ->  (512300, 467800) 
+  parse_grid('TA', 123, 678)       ->  (512300, 467800) 
+  parse_grid('TA', '12345 67890')  ->  (512345, 467890) 
+  parse_grid('TA', 12345, 67890)   ->  (512345, 467890) 
+
+If you are processing grid references from some external data source beware 
+that if you use a list with bare numbers you may lose any leading zeros for 
+grid references close to the SW corner of a grid square.  This can lead to 
+some ambiguity.  Either make the numbers into strings to preserve the leading 
+digits or supply a hash of options as a fourth argument with the `figs' option to define
+how many figures are supposed to be in each easting and northing.  Like this:
+
+  List                                     ->  interpreted as   
+  -------------------------------------------------------------
+  parse_grid('TA', 123, 8)                 ->  (512300, 400800) 
+  parse_grid('TA', 123, 8, { figs => 5 })  ->  (500123, 400008) 
+
+The default setting of figs is 3, which assumes you are using hectometres as in a traditional 
+grid reference.
+
+=item A string or list representing a grid reference on a map sheet
+
+     Map input                      ->  interpreted as    
+     ----------------------------------------------------
+     parse_grid('A:164/352194')     ->  (435200, 219400) 
+     parse_grid('B:OL43E/914701')   ->  (391400, 570100) 
+     parse_grid('B:OL43E 914 701')  ->  (391400, 570100) 
+     parse_grid('B:OL43E','914701') ->  (391400, 570100) 
+     parse_grid('B:OL43E',914,701)  ->  (391400, 570100)
+
+Again spaces are optional, but you need some non-digit between the map
+identifier and the grid reference.  There are also some constraints:
+the map identifier must be one defined in L<Geo::Coordinates::OSGB::Maps>;
+and the following grid reference must actually be on the given sheet.  Note
+also that you need to supply a specific sheet for a map that has more than one.
+The given example would fail if the map was given as `B:OL43', since that map has two sheets: 
+`B:OL43E' and `B:OL43W'.
+
+If you give the identifier as just a number, it's assumed that you wanted
+a Landranger map;
+
+     parse_grid('176/224711')  ->  (522400, 171100) 
+     parse_grid(164,513,62)    ->  (451300, 206200) 
+
+If you give just a sheet number with no easting or northing, then you will get
+the coordinates of the SW corner of the specified sheet.  Again plain numbers 
+are assumed to be Landranger sheets.
+
+     parse_grid('B:101')  ->  (80000, 3000)     
+     parse_grid(1)        ->  (429000, 1180000) 
+     parse_grid(204)      ->  (172000, 14000)   
+
+=back 4 
 
 
 =item parse_trad_grid(grid_ref)
 
-Turns a traditional grid reference into a full easting and northing pair in
-metres from the point of origin.  The I<grid_ref> can be a string like
-C<'TQ203604'> or C<'SW 452 004'>, or a list like this C<('TV', '435904')> or a list
-like this C<('NN', '345', '208')>.
-
+This is included only for backward compatibility.  It is now just a synonym
+for C<parse_grid>.
 
 =item parse_GPS_grid(grid_ref)
 
-Does the same as C<parse_trad_grid> but is looking for five digit numbers
-like C<'SW 45202 00421'>, or a list like this C<('NN', '34592', '20804')>.
+This is included only for backward compatibility.  It is now just a synonym
+for C<parse_grid>.
 
 =item parse_landranger_grid(sheet, e, n)
 
-This converts an OS Landranger sheet number and a local grid reference
-into a full easting and northing pair in metres from the point of origin.
+This routine is called automatically by C<parse_grid> when it recognises a grid
+reference using a Landranger map.  If you know you are only dealing with
+Landranger maps, then it's very slightly faster to call this routine directly.
 
-The OS Landranger sheet number should be between 1 and 204 inclusive (but
-I may extend this when I support insets).  You can supply C<(e,n)> as 3-digit
-hectometre numbers or 5-digit metre numbers.  In either case if you supply
-any leading zeros you should 'quote' the numbers to stop Perl thinking that
-they are octal constants.
+The easting and northing arguments are optional. Leave them out if you want just the coordinates
+of the SW corner of the sheet.
 
-This module will croak at you if you give it an undefined sheet number, or
-if the grid reference that you supply does not exist on the sheet.
+=item parse_map_grid(sheet, e, n)
 
-In order to get just the coordinates of the SW corner of the sheet, just call
-it with the sheet number.  It is easy to work out the coordinates of the
-other corners, because all OS Landranger maps cover a 40km square (if you
-don't count insets or the occasional sheet that includes extra details
-outside the formal margin).
+This routine is also called automatically by C<parse_grid> when it recognises a grid reference
+using a valid sheet name.  If you know you are only dealing with defined map identifiers
+then it is very slightly faster to call this routine directly.
 
-=item parse_grid(grid_ref)
+This routine will croak of you pass it a sheet identifier that is not defined in 
+L<Geo::Coordinates::OSGB::Maps>.  It will also croak if the supplied easting and northing 
+are not actually on the sheet.
 
-Attempts to match a grid reference some form or other in the input string
-and will then call the appropriate grid parsing routine from those defined
-above.  In particular it will parse strings in the form C<'176/345210'>
-meaning grid ref 345 210 on sheet 176, as well as C<'TQ345210'> and C<'TQ
-34500 21000'> etc.  You can in fact always use "parse_grid" instead of the more
-specific routines unless you need to be picky about the input.
+The easting and northing arguments are optional. Leave them out if you want just the coordinates
+of the SW corner of the sheet.  In a few cases my interpretation of "SW Corner" may not be the same 
+as yours, but usually it's obvious.  If you are trying to draw maps of sheet outlines, it is probably better
+to work with the data in C<Geo::Coordinates::OSGB::Maps> directly.
+
+=back 
+
+For more examples of parsing look at the test files.
 
 =cut
