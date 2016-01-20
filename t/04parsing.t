@@ -2,7 +2,7 @@
 
 # test grid ref parsing 
 
-use Test::More tests=>59;
+use Test::More tests=>52;
 
 use Geo::Coordinates::OSGB::Grid qw(
     parse_grid
@@ -29,9 +29,6 @@ is( sprintf("%d %d", parse_grid('WE950950')),        '-5000 -5000',     'At sea,
 is( sprintf("%d %d", parse_grid('176/224711')),      '522400 171100',   "Caesar's Camp");                  
 is( sprintf("%d %d", parse_grid('A:164/352194')),    '435200 219400',   "Charlbury Station");              
 is( sprintf("%d %d", parse_grid('B:OL43E/914701')),  '391400 570100',   "Chesters Bridge");                
-is( sprintf("%d %d", parse_grid(1)),                 '429000 1180000',  'Landranger Sheet 1 SW Corner');   
-is( sprintf("%d %d", parse_grid(204)),               '172000 14000',    'Landranger Sheet 204 SW Corner'); 
-is( sprintf("%d %d", parse_grid('B:101')),           '80000 3000',      'Explorer Sheet 101 SW Corner');   
 is( sprintf("%d %d", parse_grid(164,513,62)),        '451300 206200',   'Carfax');                         
 
 is( parse_grid('TA15'),              '510000 450000',   'scalar context: 10km square');                    
@@ -53,12 +50,9 @@ is( parse_grid('WE950950'),          '-5000 -5000',     'scalar context: At sea,
 is( parse_grid('176/224711'),        '522400 171100',   "scalar context: Caesar's Camp");                  
 is( parse_grid('A:164/352194'),      '435200 219400',   "scalar context: Charlbury Station");              
 is( parse_grid('B:OL43E/914701'),    '391400 570100',   "scalar context: map Chesters Bridge");            
-is( parse_grid('B:OL43E 914 701'),    '391400 570100',   "scalar context: map Chesters Bridge");            
+is( parse_grid('B:OL43E 914 701'),   '391400 570100',   "scalar context: map Chesters Bridge");            
 is( parse_grid('B:OL43E','914701'),  '391400 570100',   "scalar context: map 2-arg Chesters Bridge");      
 is( parse_grid('B:OL43E',914,701),   '391400 570100',   "scalar context: map 3-arg Chesters Bridge");      
-is( parse_grid(1),                   '429000 1180000',  'scalar context: Landranger Sheet 1 SW Corner');   
-is( parse_grid(204),                 '172000 14000',    'scalar context: Landranger Sheet 204 SW Corner'); 
-is( parse_grid('B:101'),             '80000 3000',      'scalar context: Explorer Sheet 101 SW Corner');   
 is( parse_grid(164,513,62),          '451300 206200',   'scalar context: Carfax');                         
 
 ok( (($e,$n) = parse_grid('TQ 234 098')) && $e == 523_400 && $n == 109_800 , "Help example 1 $e $n");
@@ -73,7 +67,4 @@ ok( (($e,$n) = parse_grid('TQ',23451,9893, {figs => 5}) ) && $e == 523_451 && $n
 # Sheet between 1..204; gre & grn must be 3 or 5 digits long
 
 ok( (($e,$n) = parse_grid(176,123,994)     ) && $e == 512_300 && $n == 199_400 , "Help example 7 $e $n");
-#
-# With just the sheet number you get GR for SW corner
-ok( (($e,$n) = parse_grid(184)) && $e == 389000 && $n == 115000 , "Help example 8 $e $n");
 

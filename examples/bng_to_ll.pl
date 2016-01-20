@@ -1,36 +1,34 @@
 #! /usr/bin/perl -w
 
-# Toby Thurston ---  6 May 2009
+# Toby Thurston -- 20 Jan 2016 
 # Parse a National Grid ref and show it as LL coordinates
 
 use strict;
 use warnings;
 
-use Geo::Coordinates::OSGB qw/
-        parse_grid
-        grid_to_ll
-        shift_ll_into_WGS84
-        format_ll_trad
-        format_ll_ISO
-        format_grid_map
-        format_grid_landranger/;
+sub dms {
+    my ($degrees,$n,$s) = @_;
+    my $sign = $degrees < 0 ? $s : $n;
+    my $dd = abs($degrees);
+    my $d = int($dd);
+    my $mm = 60*($dd-$d);
+    my $m = int($mm);
+    my $ss = 60*($mm-$m);
+    return ($sign, $d, $m, $ss);
+}
 
-use Geo::Coordinates::OSTN02 qw/
-        OSGB36_to_ETRS89
-        /;
+use Geo::Coordinates::OSGB qw/grid_to_ll/;
+use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid_landranger/;
 
 my $gr = "@ARGV";
 
 my ($e, $n) = $gr eq 'test' ? (651409.903, 313177.270) : parse_grid($gr);
-my ($x, $y, $z) = OSGB36_to_ETRS89($e,$n,0);
 my ($lat, $lon) = grid_to_ll($e, $n);
-my ($wla, $wlo) = grid_to_ll($x,$y,'WGS84');
 
 print "Your input: $gr == $e $n ";
-printf "is %s\n", scalar format_grid_map($e, $n);
+printf "is %s\n", scalar format_grid_landranger($e, $n);
 
-printf "and %s on that sheet\n",  join ':', format_ll_trad($lat, $lon);
-printf "but %s in WGS84 terms\n", scalar format_ll_ISO($wla, $wlo,'SECONDS');
-printf "or as decimals %.8g %.8g\n", $wla, $wlo;
-printf "%d %.8g  %d %.8g\n", int($wla), 60*($wla-int($wla)), int($wlo), 60*($wlo-int($wlo));
+printf "Which is %s %d° %d' %g'', ", dms($lat, 'N', 'S');
+printf "%s %d° %d' %g'' in WGS84 terms\n", dms($lon, 'E', 'W');
+printf "And as decimal lat/lon: %.8g %.8g\n", $lat, $lon;
 

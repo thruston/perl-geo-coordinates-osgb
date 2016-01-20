@@ -5,7 +5,9 @@ use strict;
 # complete with the GB coast line and the 100km grid sqaure letters.
 # Toby Thurston ---  7 Oct 2008
 #
-use Geo::Coordinates::OSGB "ll_to_grid", "parse_landranger_grid", "format_grid_GPS";
+use Geo::Coordinates::OSGB "ll_to_grid";
+use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid/;
+use Geo::Coordinates::OSGB::Maps qw/%maps/;
 use Getopt::Std;
 our $opt_a = 4;
 getopt('a'); # paper size...
@@ -24,20 +26,22 @@ my $sheet_size = 40_000;
 
 my $GR_pattern = qr/^([A-Z][A-Z])(\d\d\d)(\d\d\d)$/;
 
-for my $sheet (1 .. 204) {
+while (my ($key, $map) = each %maps) {
+ 
+    next unless $key =~ m{\AA:\d+\Z}iosmx;
 
     # get the grid coordinates for the SW corner of the map
-    my ($x, $y) = parse_landranger_grid($sheet);
+    my ($x, $y) = @{$map->{polygon}[0]};
 
     # put this sheet into the list of sheets
     push @sheets, sprintf "%f %f moveto currentpoint %d dup rectstroke %d dup rmoveto (%s) cshow\n",
-                          $x/1000, $y/1000, $sheet_size/1000, $sheet_size/2000, $sheet;
+                          $x/1000, $y/1000, $sheet_size/1000, $sheet_size/2000, $map->{number};
 
 
     # which grid squares does this sheet touch?
     for my $xx ($x, $x+$sheet_size-100) {
         for my $yy ($y, $y+$sheet_size-100) {
-            my ($sq, $e, $n) = format_grid_GPS($xx,$yy);
+            my ($sq, $e, $n) = format_grid($xx,$yy, {form=>'gps'});
             next if defined $squares{$sq};
             $squares{$sq} = sprintf "%f %f moveto currentpoint 100 100 rectstroke 50 40 rmoveto (%s) cshow\n",
                                       ($xx-$e)/1000, ($yy-$n)/1000, $sq;

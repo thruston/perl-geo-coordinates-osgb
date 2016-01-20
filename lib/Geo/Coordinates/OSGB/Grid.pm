@@ -39,9 +39,11 @@ use constant MAJOR_GRID_SQ_NORTHING_OFFSET => 1 * MAJOR_GRID_SQ_SIZE;
 use constant MAX_GRID_SIZE => MINOR_GRID_SQ_SIZE * length GRID_SQ_LETTERS;
 
 # Produce a random GR 
-# A simple approach would pick 0 < E < 700000 and 0 < N < 1250000
-# but that way many GRs produced would be in the sea, so pick a random
-# map, and then find a random GR within its bbox
+# A simple approach would pick 0 < E < 700000 and 0 < N < 1250000 but that way
+# many GRs produced would be in the sea, so pick a random map, and then find a
+# random GR within its bbox and finally check that the resulting pair is
+# actually on some map.
+
 sub random_grid {
     my @preferred_sheets = @_;
     # assume plain sheet numbers are Landranger
@@ -57,12 +59,15 @@ sub random_grid {
     else {
         @sheets = keys %maps;
     }
-    my $map = $sheets[int rand @sheets];
-    my ($lle, $lln) = @{$maps{$map}->{bbox}->[0]};
-    my ($ure, $urn) = @{$maps{$map}->{bbox}->[1]};
-    my $easting  = $lle + int(rand ($ure-$lle));
-    my $northing = $lln + int(rand ($urn-$lln));
-    
+    my ($map, $lle, $lln, $ure, $urn, $easting, $northing);
+    while (1) {
+        $map = $maps{$sheets[int rand @sheets]};
+        ($lle, $lln) = @{$map->{bbox}->[0]};
+        ($ure, $urn) = @{$map->{bbox}->[1]};
+        $easting  = $lle + int(rand ($ure-$lle));
+        $northing = $lln + int(rand ($urn-$lln));
+        last if 0 != _winding_number($easting, $northing, $map->{polygon});
+    }
     return ($easting, $northing);
 }
 
@@ -203,14 +208,12 @@ sub _grid_to_sq {
        substr(GRID_SQ_LETTERS, $minor_index, 1);
 }
 
-sub _get_grid_ref {
+sub _get_grid_square {
     my $s = shift;
     my $S = uc $s;
     return if 0 > index GRID_SQ_LETTERS, substr $S, 0, 1;
     return if 0 > index GRID_SQ_LETTERS, substr $S, 1, 1;
-    my $sq = substr $S, 0, 2;
-    my ($e, $n) = _get_eastnorthings($S);
-    return ($sq, $e, $n);
+    return substr $S, 0, 2;
 }
 
 sub _get_eastnorthings {
@@ -218,8 +221,8 @@ sub _get_eastnorthings {
     my $numbers = $S =~ tr/0-9//cdr;
     my $len = length $numbers;
     croak "No easting or northing found" unless $len;
-    croak "Easting and northing have different lengths" if $len % 2;
-    croak "Too many digits" if $len > 10;
+    croak "Easting and northing have different lengths in $S" if $len % 2;
+    croak "Too many digits in $S" if $len > 10;
     my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;
     my $n = reverse sprintf "%05d", scalar reverse substr $numbers,    $len/2;
     return ($e, $n)
@@ -235,81 +238,47 @@ sub parse_grid {
 
     my $s = @_ < 3 ? "@_" : sprintf "%s %0.*d %0.*d", $_[0], $figs, $_[1], $figs, $_[2];
 
-    my ($sq, $e, $n) = _get_grid_ref($s);
-    
+    my $sq      = _get_grid_square($s);
+
     if ( defined $sq ) {
         my ($E, $N) = _sq_to_grid($sq);
+        my ($e, $n) = _get_eastnorthings(substr $s, 2);
         @out = ($E+$e, $N+$n);
         return wantarray ? @out : "@out";
     }
 
-    my $sheet;
-    if (($sheet, $e, $n) = $s =~ m{\A (\S+) \D+ (\d{3}) \D? (\d{3}) \Z}xsm) { # sheet/eee/nnn etc
+    if (my ($sheet, $numbers) = $s =~ m{\A ([A-Z0-9:.]+)\D+(\d+\D*\d+) \Z }xsmio ) {
+
+        # allow Landranger sheets with no prefix
+        $sheet = "A:$sheet" if exists $maps{"A:$sheet"};
+
         if ( exists $maps{$sheet} ) { 
-           return parse_map_grid($sheet, $e, $n)
+            my @ll_corner = @{$maps{$sheet}->{bbox}[0]};  # NB we need the bbox corner so that it is left and below all points on the map
+
+            my ($e, $n) = _get_eastnorthings($numbers);
+
+            $e = $ll_corner[0] + ($e-$ll_corner[0]) % MINOR_GRID_SQ_SIZE;
+            $n = $ll_corner[1] + ($n-$ll_corner[1]) % MINOR_GRID_SQ_SIZE;
+
+            my $w = _winding_number($e, $n, $maps{$sheet}->{polygon});
+            if ($w == 0) {
+                croak sprintf "Grid reference %s = (%d, %d) is not on sheet %s", scalar format_grid($e,$n), $e, $n, $sheet;
+            }
+            return wantarray ? ($e, $n) : "$e $n";
         }
-    }
-
-    if ( exists $maps{$s} ) {
-        return parse_map_grid($s)
-    }
-
-    if ( ($sheet, $e, $n) = $s =~ m{\A (\d+) \D+ (\d{3}) \D? (\d{3}) \Z}xsm ) { # sheet/eee/nnn etc
-        return parse_landranger_grid($sheet, $e, $n)
-    }
-
-    if ( $s =~ m{\A \d{1,3} \Z}xsm ) {  # just a landranger sheet number
-        return parse_landranger_grid($s)
     }
 
     if ( @out = $s =~ m{\A (\d+(?:\.\d+)?) \s+ (\d+(?:\.\d+)?) \Z}xsmio ) { # eee nnn
         return wantarray ? @out : "@out";
     }
 
-    _bail_out(wanted => "a grid reference", supplied => $s);
+    croak "Failed to parse a grid reference from $s";
 }
 
-*parse_trad_grid = \&parse_grid;
-*parse_GPS_grid  = \&parse_grid;
-
-sub parse_landranger_grid {
-    my ($sheet, $e, $n) = @_;
-
-    if ( defined $maps{$sheet} ) {
-        return parse_map_grid($sheet, $e, $n)
-    }
-    
-    if ( defined $maps{"A:$sheet"} ) {
-        return parse_map_grid("A:$sheet", $e, $n)
-    }
-
-    _bail_out(wanted => "a Landranger sheet number", supplied => $sheet);
-}
-
-
-sub parse_map_grid {
-    my ($sheet, $e, $n) = @_;
-
-    if ( ! (defined $sheet && exists $maps{$sheet}) ) { 
-        _bail_out(wanted => "a known sheet identifier", supplied => $sheet) 
-    }
-
-    my @ll_corner = @{$maps{$sheet}->{polygon}[0]};
-
-    if ( ! defined $e ) { return wantarray ? @ll_corner : "@ll_corner" }
-
-    ($e, $n) = _get_eastnorthings(  ! defined $n ? "$e" : "$e$n" );
-
-    $e = $ll_corner[0] + ($e-$ll_corner[0]) % MINOR_GRID_SQ_SIZE;
-    $n = $ll_corner[1] + ($n-$ll_corner[1]) % MINOR_GRID_SQ_SIZE;
-
-    my $w = _winding_number($e, $n, $maps{$sheet}->{polygon});
-    if ($w == 0) {
-        croak sprintf "Grid reference %s is not on sheet %s", scalar format_grid($e,$n), $sheet;
-    }
-
-    return wantarray ? ($e, $n) : "$e $n";
-}
+*parse_trad_grid       = \&parse_grid;
+*parse_GPS_grid        = \&parse_grid;
+*parse_landranger_grid = \&parse_grid;
+*parse_map_grid        = \&parse_grid;
 
 # is $pt left of $a--$b?
 sub _is_left {
@@ -335,12 +304,6 @@ sub _winding_number {
     }
     return $w;
 }
-
-sub _bail_out {
-    my %a = ( wanted => 'something', supplied => 'nothing', @_ );
-    croak "Failed, trying to parse $a{wanted} from: $a{supplied}";
-}
-
 
 1;
 
@@ -547,7 +510,7 @@ how many figures are supposed to be in each easting and northing.  Like this:
 The default setting of figs is 3, which assumes you are using hectometres as in a traditional 
 grid reference.
 
-=item A string or list representing a grid reference on a map sheet
+=item A string or list representing a map sheet and a grid reference on that sheet
 
      Map input                      ->  interpreted as    
      ----------------------------------------------------
@@ -571,16 +534,19 @@ a Landranger map;
      parse_grid('176/224711')  ->  (522400, 171100) 
      parse_grid(164,513,62)    ->  (451300, 206200) 
 
-If you give just a sheet number with no easting or northing, then you will get
-the coordinates of the SW corner of the specified sheet.  Again plain numbers 
-are assumed to be Landranger sheets.
+The routine will croak of you pass it a sheet identifier that is not defined in 
+L<Geo::Coordinates::OSGB::Maps>.  It will also croak if the supplied easting and northing 
+are not actually on the sheet.
 
-     parse_grid('B:101')  ->  (80000, 3000)     
-     parse_grid(1)        ->  (429000, 1180000) 
-     parse_grid(204)      ->  (172000, 14000)   
+In earlier versions, the easting and northing arguments were optional, and you could 
+leave them out to get just the SW corner of the sheet.  This functionality has been 
+removed in this version, because it's not always obvious where the SW corner of a 
+sheet is (for an example look at the inset on Landranger sheet 107).
+
+If you need access to the postion of the sheets in this version, you should work directly with
+the data in C<Geo::Coordinates::OSGB::Maps>.
 
 =back 4 
-
 
 =item parse_trad_grid(grid_ref)
 
@@ -594,27 +560,13 @@ for C<parse_grid>.
 
 =item parse_landranger_grid(sheet, e, n)
 
-This routine is called automatically by C<parse_grid> when it recognises a grid
-reference using a Landranger map.  If you know you are only dealing with
-Landranger maps, then it's very slightly faster to call this routine directly.
-
-The easting and northing arguments are optional. Leave them out if you want just the coordinates
-of the SW corner of the sheet.
+This is included only for backward compatibility.  It is now just a synonym
+for C<parse_grid>.
 
 =item parse_map_grid(sheet, e, n)
 
-This routine is also called automatically by C<parse_grid> when it recognises a grid reference
-using a valid sheet name.  If you know you are only dealing with defined map identifiers
-then it is very slightly faster to call this routine directly.
-
-This routine will croak of you pass it a sheet identifier that is not defined in 
-L<Geo::Coordinates::OSGB::Maps>.  It will also croak if the supplied easting and northing 
-are not actually on the sheet.
-
-The easting and northing arguments are optional. Leave them out if you want just the coordinates
-of the SW corner of the sheet.  In a few cases my interpretation of "SW Corner" may not be the same 
-as yours, but usually it's obvious.  If you are trying to draw maps of sheet outlines, it is probably better
-to work with the data in C<Geo::Coordinates::OSGB::Maps> directly.
+This is included only for backward compatibility.  It is now just a synonym
+for C<parse_grid>.
 
 =back 
 
