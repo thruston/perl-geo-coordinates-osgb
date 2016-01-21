@@ -1,6 +1,7 @@
 Geo::Coordinates::OSGB
-Geo::Coordinates::OSTN02
-------------------------
+Geo::Coordinates::OSGB::Grid
+Geo::Coordinates::OSGB::Maps
+----------------------------
 
 Routines to convert latitude and longitude coordinates to and from transverse
 Mercator grid references. The routines are optimized for use with the British
@@ -8,18 +9,10 @@ national grid.
 
 The OSGB module provides routines to convert between latitude/longitude
 coordinates based on the British Ordnance Survey's standard geoid model and
-the British National Grid.  The module includes some useful extra routines to
+the British National Grid.  The Grid module includes some useful extra routines to
 parse and format grid references in a variety of popular forms (including
-which Landranger map your point appears on).
-
-The second module provides an implementation of the standard transformation
-tables that are now used by the British Ordnance Survey to define the
-National Grid from GPS surveys.  This module provides accurate conversion
-between the British National Grid and latitude/longitude coordinates based on
-the global WGS84 geoid model (the one used by all GPS devices, and popular
-mapping tools such as Google Earth).  The OSTN02 data is rather large (6M
-bytes), and will take a few microseconds to load even on a new machine,
-but once loaded conversions should be reasonably quick.
+which Landranger map your point appears on). The Maps module provides
+data for British maps.
 
 Note that due to the nature of this type of conversion, the conversions are 
 only really useful in the vicinity of the British Isles.  If you are elsewhere 
@@ -43,7 +36,6 @@ hand; just unzip it to some temporary home, then do the usual thing:
         make test
         [sudo] make install
 
-The last tests called by "make test" *will* generate some harmless warnings.
 The full suite of tests takes less than 2 seconds on my machine. 
 You may or may not need sudo depending on how you have set up your system.
 
@@ -53,11 +45,25 @@ None.
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2002-2015 Toby Thurston
+Copyright (C) 2002-2016 Toby Thurston
 
-OSTN02 transformation data is freely available but remains Crown Copyright (C) 2002
+OSTN02 transformation data included in this module is freely
+available from the Ordnance Survey but remains Crown Copyright (C)
+2002
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself.
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 USA.
 
 All feedback gratefully received.

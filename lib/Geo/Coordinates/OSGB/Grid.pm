@@ -48,8 +48,8 @@ sub random_grid {
     my @preferred_sheets = @_;
     # assume plain sheet numbers are Landranger
     for my $s (@preferred_sheets) {
-        if ($s =~ m{\A\d+\Z}) {
-            $s =~ s/\A/A:/
+        if ($s =~ m{\A\d+\Z}xsmio) {
+            $s =~ s/\A/A:/xsmio
         }
     }
     my @sheets;
@@ -84,7 +84,7 @@ sub format_grid {
     my @sheets = ();
     if ( $with_maps ) {
         while (my ($k,$m) = each %maps) {
-            next unless index($map_keys, substr($k,0,1)) > -1;
+            next if index($map_keys, substr($k,0,1)) == -1;
             if ($m->{bbox}->[0][0] <= $easting  && $easting  < $m->{bbox}->[1][0]
                 && $m->{bbox}->[0][1] <= $northing && $northing < $m->{bbox}->[1][1]) {
                 my $w = _winding_number($easting, $northing, $m->{polygon});
@@ -159,7 +159,7 @@ sub format_grid_landranger {
     my ($sq, $e, $n, @sheets) = format_grid($easting, $northing, { form => 'SS EEE NNN', maps => 1, series => 'A' });
 
     for my $s (@sheets) {
-        $s =~ s/\AA://;
+        $s =~ s/\AA://xsm;
     }
     
     return ($sq, $e, $n, @sheets) if wantarray;
@@ -220,7 +220,7 @@ sub _get_eastnorthings {
     my $S = shift;
     my $numbers = $S =~ tr/0-9//cdr;
     my $len = length $numbers;
-    croak "No easting or northing found" unless $len;
+    croak "No easting or northing found" if $len == 0;
     croak "Easting and northing have different lengths in $S" if $len % 2;
     croak "Too many digits in $S" if $len > 10;
     my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;
@@ -311,13 +311,30 @@ __END__
 
 =pod
 
-=head1 Functions for parsing and formatting grid references
+=head1 NAME
+
+Geo::Coordinates::OSGB::Grid - Format and parse British National Grid references
+
+=head1 VERSION
+
+Examine $Geo::Coordinates::OSGB::Grid::VERSION for details.
+
+=head1 SYNOPSIS
+
+  use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid/;
+
+  my ($e,$n) = parse_grid('TQ 23451 09893');
+  my $gr     = format_grid($e, $n); # "TQ 234 098"     
+
+=head1 DESCRIPTION
 
 This module provides useful functions for parsing and formatting OSGB grid 
 references.  Some detailed background is given in C<background.pod> and on 
 the OS web site.  
 
-=head2 Routines to generate grid references
+=head1 SUBROUTINES
+
+=head2 Subroutines to generate grid references
 
 =over 4
 
@@ -342,7 +359,7 @@ they are suitable for input to the C<format_grid> routines.
 
 =back
 
-=head2 Routines to format (easting, northing) pairs
+=head2 Subroutines to format (easting, northing) pairs
 
 =over 4
 
@@ -458,7 +475,7 @@ map numbers are in the list of sheets.
 
 For more examples of formatting look at the test files.
 
-=head2 Routines to extract (easting, northing) pairs from grid references
+=head2 Suboutines to extract (easting, northing) pairs from grid references
 
 =over 4
 
@@ -570,6 +587,103 @@ for C<parse_grid>.
 
 =back 
 
+=head1 EXAMPLES
+
+  use Geo::Coordinates::OSGB::Grid 
+     qw/parse_grid 
+        format_grid 
+        format_grid_landranger/;
+
+  # Get full coordinates in metres from GR
+  my ($e,$n) = parse_grid('TQ 23451 09893');
+
+  # Reading and writing grid references
+  # Format full easting and northing into traditional formats
+  my $gr1 = format_grid($e, $n);                              # "TQ 234 098"     
+  my $gr2 = format_grid($e, $n, { form => 'SSEEENNN' } );     # "TQ234098"       
+  my $gr3 = format_grid($e, $n, { form => 'SSEEEEENNNNN'} );  # "TQ 23451 09893" 
+  my $gr4 = format_grid($e, $n, { form => 'gps'} );           # "TQ 23451 09893" 
+  my $gr5 = format_grid_landranger($e, $n);# "TQ 234 098 on Landranger sheet 198"
+
+  # or call in list context to get the individual parts
+  my ($sq, $ee, $nn) = format_grid($e, $n); # ('TQ', 234, 98)
+
+  # parse routines to convert from these formats to full e,n
+  ($e,$n) = parse_grid('TQ 234 098');
+  ($e,$n) = parse_grid('TQ234098'); # spaces optional
+  ($e,$n) = parse_grid('TQ',234,98); # or even as a list
+  ($e,$n) = parse_grid('TQ 23451 09893'); # as above..
+
+  # You can also get grid refs from individual maps.
+  # Sheet between 1..204; gre & grn must be 3 or 5 digits long
+  ($e,$n) = parse_grid(176,123,994);
+  # put leading zeros in quotes 
+  ($e,$n) = parse_grid(196,636,'024');
+
 For more examples of parsing look at the test files.
+
+=head1 BUGS AND LIMITATIONS
+
+The useful area of these routines is confined to the British Isles,
+not including Ireland or the Channel Islands.  But very little range
+checking is done, so you can generate pseudo grid references for
+points that are some way outside this useful area.  The approximate
+corners are from 64.75N 32.33W to 65.8N 22.65E to 44.5N 11.8E to
+44N 19.5W.  Outside the area bounded by these corners,
+C<format_grid> will croak with a "too far off the grid" error.  
+
+=head1 DIAGNOSTICS
+
+If you get an expected result from any of these subroutines, please
+generate a test case to reproduce your result and get in touch to ask 
+me about it.
+
+=head1 CONFIGURATION AND ENVIRONMENT
+
+There is no configuration required either of these modules or your
+environment.  It should work on any recent version of perl, on any
+platform.
+
+=head1 DEPENDENCIES
+
+None.
+
+=head1 INCOMPATIBILITIES
+
+None known.
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2002-2016 Toby Thurston
+
+OSTN02 transformation data included in this module is freely
+available from the Ordnance Survey but remains Crown Copyright (C)
+2002
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+02110-1301 USA.
+
+=head1 AUTHOR
+
+Toby Thurston -- 21 Jan 2016 
+
+toby@cpan.org
+
+=head1 SEE ALSO
+
+See L<Geo::Coordinates::OSGB>. 
+
 
 =cut

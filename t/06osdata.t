@@ -95,6 +95,7 @@ for my $k ( sort keys %test_input ) {
     ok($lat_error < ($lat < 55 ? 10 : 113), sprintf "Lat for %s %.6g %.3g mm", $k, $lat, $lat_error); # about 113 mm
     ok($lon_error < 10,  sprintf "Lon for %s %.6g %.3g mm", $k, $lon, $lon_error); # about  10 mm
 }
+#print "$minlate $maxlate -- $minlone $maxlone\n";
 
 
 use Geo::Coordinates::OSGB::Grid qw/format_grid/;
@@ -134,5 +135,5 @@ for my $t (@test_data) {
 
 }
 
-print "$maxep $maxel\n";
+#print "$maxep $maxel\n";
 

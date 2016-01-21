@@ -4,11 +4,19 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Complete simplification and restructure of the entire module
 
-    - Geo::Coordinates::OSGB now provides only: grid_to_ll and ll_to_grid
+    - Geo::Coordinates::OSGB now provides only: 
+
+        grid_to_ll
+        ll_to_grid
+
     - WGS84 is assumed as the default ellipsoid shape
     - OSTN02 data is automatically used where necessary providing much a simpler interface
     - New Helmert transformation routines automatically used outside OSTN02 coverage
+    
     - New module Geo::Coordinates::OSGB::Grid provides routines to parse and format grid references
+      -- general purpose "format_grid" for all formatting
+      -- general purpose "parse_grid" for all parsing
+    
     - New module Geo::Coordinates::OSGB::Maps provides outlines, bounding boxes, and titles for OSGB maps
 
 

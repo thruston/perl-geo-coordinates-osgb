@@ -13,7 +13,7 @@ sub format_ll_googlemaps {
     return sprintf 'http://www.google.com/maps/place/@%f,%f,14z/data=!4m2!3m1!1s0x0:0x0', $lat, $lon;
 }
 
-my ($e, $n) = random_grid();
+my ($e, $n) = @ARGV ? @ARGV : random_grid();
 
 my ($lat, $lon) = grid_to_ll($e, $n);
 
