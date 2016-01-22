@@ -6,9 +6,10 @@ use base qw(Exporter);
 use strict;
 use warnings;
 use Carp;
+use 5.008; # At least Perl 5.8 please
 use POSIX qw/floor/;
 
-our $VERSION = '2.10';
+our $VERSION = '2.11';
 
 our %EXPORT_TAGS = (
     all => [ qw( 
@@ -217,12 +218,13 @@ sub _get_grid_square {
 }
 
 sub _get_eastnorthings {
-    my $S = shift;
-    my $numbers = $S =~ tr/0-9//cdr;
+    my $s = shift;
+    my $numbers = $s;
+    $numbers =~ tr/0-9//cd; # avoid using "r" here as it requires perl >= 5.14
     my $len = length $numbers;
     croak "No easting or northing found" if $len == 0;
-    croak "Easting and northing have different lengths in $S" if $len % 2;
-    croak "Too many digits in $S" if $len > 10;
+    croak "Easting and northing have different lengths in $s" if $len % 2;
+    croak "Too many digits in $s" if $len > 10;
     my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;
     my $n = reverse sprintf "%05d", scalar reverse substr $numbers,    $len/2;
     return ($e, $n)
@@ -311,6 +313,8 @@ __END__
 
 =pod
 
+=encoding utf8
+
 =head1 NAME
 
 Geo::Coordinates::OSGB::Grid - Format and parse British National Grid references
@@ -332,13 +336,15 @@ This module provides useful functions for parsing and formatting OSGB grid
 references.  Some detailed background is given in C<background.pod> and on 
 the OS web site.  
 
-=head1 SUBROUTINES
+=head1 SUBROUTINES AND METHODS
 
 =head2 Subroutines to generate grid references
 
 =over 4
 
-=item C<random_grid([sheet1, sheet2, ...])>
+=item * 
+
+C<random_grid([sheet1, sheet2, ...])>
 
 Takes an optional list of map sheet identifiers, and returns a random easting
 and northing for some place covered by one of the maps.  There's no guarantee
@@ -363,7 +369,9 @@ they are suitable for input to the C<format_grid> routines.
 
 =over 4
 
-=item C<format_grid(e, n)>
+=item *
+
+C<format_grid(e, n)>
 
 Formats an (easting, northing) pair into traditional `full national grid
 reference' with two letters and two sets of three numbers, like this
@@ -380,7 +388,9 @@ hectometers (as the OS system demands), so the grid reference refers to the
 lower left corner of the relevant 100m square.  The system is described below the
 legend on all OS Landranger maps.
 
-=item C<format_grid(e, n, {form =E<gt> 'SS EEE NNN', maps =E<gt> 0, series =E<gt> 'ABCHJ'})>
+=item *
+
+C<format_grid(e, n, {form =E<gt> 'SS EEE NNN', maps =E<gt> 0, series =E<gt> 'ABCHJ'})>
 
 The format grid routine takes an optional third argument to control 
 the form of grid reference returned.  This should be a hash reference with 
@@ -421,7 +431,7 @@ In a scalar context you get back a string like this:
     SU 387 147 on A:196, B:OL22E, C:180
 
 In a list context you get back a list like this:
-    
+
     ('SU', 387, 147, A:196, B:OL22E, C:180)
 
 =item series
@@ -444,24 +454,32 @@ use: C<series =E<gt> 'AB'>, and so on.
 
 Note that the numbers returned for the Harvey maps have been invented for the purposes
 of this module.  They do not appear on the maps themselves; instead the maps have titles.
-You can use the numbers returned as an index to the data in C<Geo::Coordinates::OSGB::Maps>
+You can use the numbers returned as an index to the data in L<Geo::Coordinates::OSGB::Maps>
 to find the appropriate title.
 
-=back 4
+=back 
 
-=item format_grid_trad(e,n)
+=item *
+
+C<format_grid_trad(e,n)>
 
 Equivalent to C<format_grid(e,n, { form =E<gt> 'trad' })>.
 
-=item format_grid_GPS(e,n)
+=item *
+
+C<format_grid_GPS(e,n)>
 
 Equivalent to C<format_grid(e,n, { form =E<gt> 'gps' })>.
 
-=item format_grid_map(e,n)
+=item *
+
+C<format_grid_map(e,n)>
 
 Equivalent to C<format_grid(e,n, { maps =E<gt> 1 })>.
 
-=item format_grid_landranger(e,n)
+=item *
+
+C<format_grid_landranger(e,n)>
 
 Equivalent to
 
@@ -479,7 +497,9 @@ For more examples of formatting look at the test files.
 
 =over 4
 
-=item parse_grid
+=item *
+
+C<parse_grid>
 
 The C<parse_grid> routine extracts a (easting, northing) pair from a string, 
 or a list of arguments, representing a grid reference.  The pair returned
@@ -490,7 +510,9 @@ The arguments should be in one of the following forms
 
 =over 8
 
-=item A single string representing a grid reference
+=item * 
+
+A single string representing a grid reference
 
   String                        ->  interpreted as   
   --------------------------------------------------
@@ -503,7 +525,9 @@ square as "TA1267" which gives C<(512000, 467000)>. For completeness you can
 also use "TA 1234 6789" to refer to a decametre square C<(512340, 467890)> but 
 you might struggle to find a use for that one.
 
-=item A list representing a grid reference
+=item * 
+
+A list representing a grid reference
 
   List                             ->  interpreted as   
   -----------------------------------------------------
@@ -527,7 +551,9 @@ how many figures are supposed to be in each easting and northing.  Like this:
 The default setting of figs is 3, which assumes you are using hectometres as in a traditional 
 grid reference.
 
-=item A string or list representing a map sheet and a grid reference on that sheet
+=item * 
+
+A string or list representing a map sheet and a grid reference on that sheet
 
      Map input                      ->  interpreted as    
      ----------------------------------------------------
@@ -561,26 +587,34 @@ removed in this version, because it's not always obvious where the SW corner of 
 sheet is (for an example look at the inset on Landranger sheet 107).
 
 If you need access to the postion of the sheets in this version, you should work directly with
-the data in C<Geo::Coordinates::OSGB::Maps>.
+the data in L<Geo::Coordinates::OSGB::Maps>.
 
-=back 4 
+=back  
 
-=item parse_trad_grid(grid_ref)
+=item *
 
-This is included only for backward compatibility.  It is now just a synonym
-for C<parse_grid>.
-
-=item parse_GPS_grid(grid_ref)
+C<parse_trad_grid(grid_ref)>
 
 This is included only for backward compatibility.  It is now just a synonym
 for C<parse_grid>.
 
-=item parse_landranger_grid(sheet, e, n)
+=item *
+
+C<parse_GPS_grid(grid_ref)>
 
 This is included only for backward compatibility.  It is now just a synonym
 for C<parse_grid>.
 
-=item parse_map_grid(sheet, e, n)
+=item *
+
+C<parse_landranger_grid(sheet, e, n)>
+
+This is included only for backward compatibility.  It is now just a synonym
+for C<parse_grid>.
+
+=item *
+
+C<parse_map_grid(sheet, e, n)>
 
 This is included only for backward compatibility.  It is now just a synonym
 for C<parse_grid>.
@@ -641,8 +675,8 @@ me about it.
 =head1 CONFIGURATION AND ENVIRONMENT
 
 There is no configuration required either of these modules or your
-environment.  It should work on any recent version of perl, on any
-platform.
+environment.  It should work on any recent version of perl better than 5.8, 
+on any platform.
 
 =head1 DEPENDENCIES
 
@@ -677,13 +711,12 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 
 =head1 AUTHOR
 
-Toby Thurston -- 21 Jan 2016 
+Toby Thurston -- 22 Jan 2016 
 
 toby@cpan.org
 
 =head1 SEE ALSO
 
 See L<Geo::Coordinates::OSGB>. 
-
 
 =cut

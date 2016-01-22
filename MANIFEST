@@ -1,6 +1,5 @@
 Changes
 MANIFEST
-MYMETA.yml
 Makefile.PL
 README
 examples/bng_to_ll.pl

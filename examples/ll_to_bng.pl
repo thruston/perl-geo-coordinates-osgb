@@ -24,6 +24,6 @@ else {
 
 my ($e,  $n)  = ll_to_grid($lat, $lon);
 
-printf "Your input: %g %g from WGS84 is %g %g on the grid\n", $lat, $lon, $e, $n;
+printf "Your input: %g %g from WGS84 is %s %s on the grid\n", $lat, $lon, $e, $n;
 printf "which is %s\n", scalar format_grid_landranger($e, $n);
 

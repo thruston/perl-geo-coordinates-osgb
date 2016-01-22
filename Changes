@@ -1,5 +1,22 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
+2.11 January 2016
+
+    - Small bug fixes only
+
+    - Removed the 'r' switch from the single use of the 'tr' function. This accidentally
+      created a dependency on perl 5.14 which caused several CPAN testers to fail 2.10.
+
+    - Added 'use 5.008' to main modules: everything should now work on perl 5.8 or better.
+
+    - Added note about accuracy of OSTN02 in grid square HP (far north of Shetland) and changed
+      the random round-trip tests to avoid this square.  For reasons I do not understand, the 
+      accuracy of round trip conversion with this implementation of OSTN02 is within a few mm 
+      for most of the country, but suddenly drops to an average of about 25m in grid square HP.
+
+    - Minor clean up of pod formatting in a couple of places
+
+
 2.10 January 2016
 
     - Complete simplification and restructure of the entire module

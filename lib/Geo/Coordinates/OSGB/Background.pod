@@ -314,12 +314,13 @@ Since Version 2.09 these modules have included a set of map sheet
 definitions so that you can find which paper maps your coordinates
 are on.
 
-The series of maps currently defined include: 
+See L<Geo::Coordinates::OSGB::Maps> for details of the series included.
+The first three series are OS maps:
 
- A - OS Landranger maps at 1:50000 scale; 
- B - OS Explorer maps at 1:25000; 
- C - the old OS One-Inch maps at 1:63360.  
- 
+  A - OS Landranger maps at 1:50000 scale; 
+  B - OS Explorer maps at 1:25000; 
+  C - the old OS One-Inch maps at 1:63360.  
+
 Landranger sheet 47 appears as "A:47" and Explorer sheet 161 as
 "B:161" and so on.  As of 2015, the Explorer series of incorporates
 the Outdoor Leisure maps, so (for example) the two sheets that make
