@@ -1,4 +1,12 @@
-=head1 Backround and extended description
+=head1 NAME
+
+Geo::Coordinates::OSGB::Background - Backround and extended description 
+
+=head1 VERSION
+
+V2.12
+
+=head1 DESCRIPTION
 
 These notes are part of Geo::Coordinates::OSGB, a perl
 implementation of latitude and longitude co-ordinate conversion for

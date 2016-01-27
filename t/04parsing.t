@@ -2,7 +2,7 @@
 
 # test grid ref parsing 
 
-use Test::More tests=>52;
+use Test::More tests=>55;
 
 use Geo::Coordinates::OSGB::Grid qw(
     parse_grid
@@ -54,6 +54,10 @@ is( parse_grid('B:OL43E 914 701'),   '391400 570100',   "scalar context: map Che
 is( parse_grid('B:OL43E','914701'),  '391400 570100',   "scalar context: map 2-arg Chesters Bridge");      
 is( parse_grid('B:OL43E',914,701),   '391400 570100',   "scalar context: map 3-arg Chesters Bridge");      
 is( parse_grid(164,513,62),          '451300 206200',   'scalar context: Carfax');                         
+
+is( parse_grid('B:119/OL3/480103'),      '448000 110300',   "scalar context: map with dual name");      
+is( parse_grid('B:309S.a 26432 34013'),   '226432 534013',   "scalar context: inset on B:309");      
+is( parse_grid('B:368/OL47W', 723, 112),   '272300 711200',   "scalar context: 3-arg, dual name");
 
 ok( (($e,$n) = parse_grid('TQ 234 098')) && $e == 523_400 && $n == 109_800 , "Help example 1 $e $n");
 ok( (($e,$n) = parse_grid('TQ234098')  ) && $e == 523_400 && $n == 109_800 , "Help example 2 $e $n");

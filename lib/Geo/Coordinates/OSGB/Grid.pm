@@ -9,7 +9,7 @@ use Carp;
 use 5.008; # At least Perl 5.8 please
 use POSIX qw/floor/;
 
-our $VERSION = '2.11';
+our $VERSION = '2.12';
 
 our %EXPORT_TAGS = (
     all => [ qw( 
@@ -249,7 +249,7 @@ sub parse_grid {
         return wantarray ? @out : "@out";
     }
 
-    if (my ($sheet, $numbers) = $s =~ m{\A ([A-Z0-9:.]+)\D+(\d+\D*\d+) \Z }xsmio ) {
+    if (my ($sheet, $numbers) = $s =~ m{\A ([A-Z0-9:./]+)\D+(\d+\D*\d+) \Z }xsmio ) {
 
         # allow Landranger sheets with no prefix
         $sheet = "A:$sheet" if exists $maps{"A:$sheet"};
