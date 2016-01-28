@@ -4,8 +4,8 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Re-worked the handling of points near the boundary of the OSTN02 polygon,
       to avoid a potential loop in rare cases.  This is unlikely to affect any
-      transformations with real coordinates unless you spend a lot of time in
-      boat about 10km offshore, but avoids some problems in my testing with
+      transformations with real coordinates (unless you spend a lot of time in
+      boats about 10km offshore), but avoids some problems in my testing with
       random grid points.
 
     - Simplified OSTN02 data access.  Removed the OSGM02 height part of the
@@ -13,9 +13,9 @@ Revision history for Perl extension Geo::Coordinates::OSGB
       and a little faster to load. 
 
     - Added user interface to approximate conversion routines for quick Helmert
-      transformations
+      transformations:  "grid_to_ll_helmert" and "ll_to_grid_helmert" 
 
-    - Fixed a small bug in parse_grid, so that it allows '/' character in map
+    - Fixed a small bug in "parse_grid", so that it allows '/' character in map
       sheet names, and therefore works with sheet names like: 'B:110/OL44'
 
     - Corrected structure of POD documentation in Maps.pm and Background.pm

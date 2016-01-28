@@ -34,7 +34,7 @@ hand; just unzip it to some temporary home, then do the usual thing:
         make test
         [sudo] make install
 
-The full suite of tests takes less than 2 seconds on my machine. 
+The full suite of tests takes about 2 seconds on my machine. 
 You may or may not need sudo depending on how you have set up your system.
 
 DEPENDENCIES

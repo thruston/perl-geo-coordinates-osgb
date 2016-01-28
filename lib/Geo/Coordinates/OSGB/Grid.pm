@@ -390,7 +390,7 @@ legend on all OS Landranger maps.
 
 =item *
 
-C<format_grid(e, n, {form =E<gt> 'SS EEE NNN', maps =E<gt> 0, series =E<gt> 'ABCHJ'})>
+C<< format_grid(e, n, {form => 'SS EEE NNN', maps => 0, series => 'ABCHJ'}) >>
 
 The format grid routine takes an optional third argument to control 
 the form of grid reference returned.  This should be a hash reference with 
@@ -424,7 +424,7 @@ case or a mixture.
 
 Controls whether to include a list of map sheets after the grid reference.
 Set it to 1 (or any true value) to include the list, and to 0 (or any false value) 
-to leave it out.  The default is C<maps =E<gt> 0>.
+to leave it out.  The default is C<< maps => 0 >>.
 
 In a scalar context you get back a string like this:
 
@@ -449,8 +449,8 @@ C<H> : Harvey British Mountain maps — mainly at 1:40000
 
 C<J> : Harvey Super Walker maps — mainly at 1:25000
 
-so if you only want Explorer maps use: C<series =E<gt> 'B'>, and if you want only Explorers and Landrangers
-use: C<series =E<gt> 'AB'>, and so on. 
+so if you only want Explorer maps use: C<< series => 'B' >>, and if you want only Explorers and Landrangers
+use: C<< series => 'AB' >>, and so on. 
 
 Note that the numbers returned for the Harvey maps have been invented for the purposes
 of this module.  They do not appear on the maps themselves; instead the maps have titles.
@@ -463,19 +463,19 @@ to find the appropriate title.
 
 C<format_grid_trad(e,n)>
 
-Equivalent to C<format_grid(e,n, { form =E<gt> 'trad' })>.
+Equivalent to C<< format_grid(e,n, { form => 'trad' }) >>.
 
 =item *
 
 C<format_grid_GPS(e,n)>
 
-Equivalent to C<format_grid(e,n, { form =E<gt> 'gps' })>.
+Equivalent to C<< format_grid(e,n, { form => 'gps' }) >>.
 
 =item *
 
 C<format_grid_map(e,n)>
 
-Equivalent to C<format_grid(e,n, { maps =E<gt> 1 })>.
+Equivalent to C<< format_grid(e,n, { maps => 1 }) >>.
 
 =item *
 
