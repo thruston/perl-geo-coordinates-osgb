@@ -12,9 +12,12 @@ use Test::More tests => 14;
 # and the first transformation of +100 -90 m will take us to (79120, -70)
 # which should cause us fall back to using the Helmert approximation
 
-my ($helmert_lat, $helmert_lon) = (49.8143931975509, -6.4635705395896);
-is( sprintf( "%s %s", grid_to_ll(79020,20)), "$helmert_lat $helmert_lon" , "Edge one");
-is( ll_to_grid($helmert_lat, $helmert_lon), "79020 20", "Edge one");
+my @edge = (49.8143931975509, -6.4635705395896);
+my $result = sprintf "%.9g %.9g", @edge;
+
+#printf "@edge %s %s\n", grid_to_ll(79020,20);
+is( sprintf( "%.9g %.9g", grid_to_ll(79020,20)), $result , "Edge one $result");
+is( ll_to_grid(@edge), "79020 20", "Edge one");
 
 
 is( ll_to_grid(grid_to_ll(77360, 895710)), "77360 895710", "near Uist");

@@ -9,7 +9,7 @@ use Carp;
 use 5.008; # At least Perl 5.8 please
 use POSIX qw/floor/;
 
-our $VERSION = '2.12';
+our $VERSION = '2.13';
 
 our %EXPORT_TAGS = (
     all => [ qw( 
@@ -97,11 +97,15 @@ sub format_grid {
         @sheets = sort @sheets;
     } 
 
+    # special cases
     if ( $form eq 'TRAD' ) {
         $form = 'SS EEE NNN';
     }
     elsif ( $form eq 'GPS' ) {
         $form = 'SS EEEEE NNNNN';
+    }
+    elsif ( $form eq 'SS' ) {
+        return $sq;
     }
 
     if ( my ($space_a, $e_spec, $space_b, $n_spec) = $form =~ m{ \A S{1,2}(\s*)(E{1,5})(\s*)(N{1,5}) \Z }iosxm ) {
@@ -404,11 +408,15 @@ Controls the format of the grid reference.  With C<$e, $n> set as above:
 
     Format          produces        Format            produces       
     ----------------------------------------------------------------
+    'SS'            SU
     'SSEN'          SU31            'SS E N'          SU 3 1         
     'SSEENN'        SU3814          'SS EE NN'        SU 38 14       
     'SSEEENNN'      SU387147        'SS EEE NNN'      SU 387 147     
     'SSEEEENNNN'    SU38711479      'SS EEEE NNNN'    SU 3871 1479 
     'SSEEEEENNNNN'  SU3871014792    'SS EEEEE NNNNN'  SU 38710 14792 
+
+You can't leave out the SS, you can't have N before E, and there must
+be the same number of Es and Ns.
 
 There are two other special formats:
 
@@ -418,7 +426,11 @@ There are two other special formats:
 In a list context, this option means that the individual components are returned
 appropriately truncated as shown.  So with C<SS EEE NNN> you get back C<('SU', 387, 147)>
 and B<not> C<('SU', 387.10908, 147.92248)>.  The format can be given as upper case or lower
-case or a mixture.
+case or a mixture.  If you want just the local eastings and northings without the 
+grid square, get the individual parts in a list context and format them yourself:
+
+    my $gr = sprintf('Grid ref %2$s %3$s on Sheet %4$s', format_grid_landranger($e, $n))
+    # returns: Grid ref 387 147 on Sheet 196 
 
 =item maps
 

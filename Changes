@@ -1,6 +1,21 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
-2.12 February 2016
+2.13 February 2016
+
+    - format_grid now supports ... { form => 'SS' } ... to get just the grid square.
+
+    - Corresponding update to t/03format.t 
+
+    - updated examples/plotmaps.pl
+
+    - Minor change in t/08out_of_range.t and t/13edge.t tests to allow for Perl 
+      with "long double" enabled.  Corresponding updates to documentation.
+
+      This does not affect any function; I've simply made the tests more robust.
+      I should add that "long doubles" do not benefit this module at all.  The results 
+      and accuracy you get are the same with or without "long doubles".
+
+2.12 January 2016
 
     - Re-worked the handling of points near the boundary of the OSTN02 polygon,
       to avoid a potential loop in rare cases.  This is unlikely to affect any

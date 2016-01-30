@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 22;
+use Test::More tests => 24;
 
 use Geo::Coordinates::OSGB qw /ll_to_grid/;
 use Geo::Coordinates::OSGB::Grid qw/
@@ -35,12 +35,15 @@ $e = 438710.908;
 $n = 114792.248;
 is(format_grid($e, $n),                                              'SU 387 147',                               "format_grid with defaults");    
 is(format_grid($e, $n, {form => 'SS EEE NNN', maps => 0, series => 'ABCHJ'}), 'SU 387 147',                      "format_grid with defaults");    
+is(format_grid($e, $n, {form => 'SS'}),                              'SU',                                       "format_grid with SS");          
 is(format_grid($e, $n, {form => 'SSEN'}),                            'SU31',                                     "format_grid with SSEN");          
 is(format_grid($e, $n, {form => 'ss eee nnn'}),                      'SU 387 147',                               "format_grid with SS EEE NNN");    
 is(format_grid($e, $n, {form => 'trad'}),                            'SU 387 147',                               "format_grid with trad");          
 is(format_grid($e, $n, {form => 'gps' }),                            'SU 38710 14792',                           "format_grid with gps");           
 is(format_grid($e, $n, {form => 'gps', maps => 1 }),                 'SU 38710 14792 on A:196, B:OL22E, C:180',  "format_grid with map");           
 is(format_grid($e, $n, {form => 'trad', maps => 1, series => 'B'}),  'SU 387 147 on B:OL22E',                    "format_grid with map + options"); 
+is(sprintf('GR %2$s %3$s on Sheet %4$s', format_grid_landranger($e, $n)),  
+           'GR 387 147 on Sheet 196',               "format_grid with map + options"); 
 
 $e = 132508;
 $n = 830205;

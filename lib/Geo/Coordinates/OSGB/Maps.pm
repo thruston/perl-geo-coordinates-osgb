@@ -2,7 +2,7 @@ package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.12';
+our $VERSION = '2.13';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
 our %name_for_map_series = ( 
@@ -1154,14 +1154,14 @@ Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
 
 =head1 SUBROUTINES AND METHODS
 
-This module exports no functions, but two hashes of data.
+This module exports no functions, but just two hashes of data.
 
 =head2 Hash C<%name_for_map_series>
 
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
 
-Currently (V2.12) we have
+Currently (V2.13) we have
 
   A => 'OS Landranger', 
   B => 'OS Explorer',
@@ -1184,7 +1184,7 @@ The bounding box of the sheet as a list of two pairs of coordinates (in metres
 from the grid origin)
 
 =item polygon
-
+  
 A list of pairs of coordinates (in metres from grid origin) that define the
 corners of the sheet.  The list starts at the SW corner (approximately, on some
 sheets it's not entirely obvious where to start), and works round

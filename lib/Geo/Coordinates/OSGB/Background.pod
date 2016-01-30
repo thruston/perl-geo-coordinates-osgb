@@ -4,7 +4,7 @@ Geo::Coordinates::OSGB::Background - Backround and extended description
 
 =head1 VERSION
 
-V2.12
+V2.13
 
 =head1 DESCRIPTION
 
@@ -341,6 +341,13 @@ So none of the routines is really slow, since even C<grid_to_ll> takes less
 than 1 ms, but C<ll_to_grid_helmert> runs about 10 faster than C<ll_to_grid>,
 and C<grid_to_ll_helmert> more than 20 times faster than C<grid_to_ll>.  `Your
 mileage may vary' of course.
+
+The routines have been tested with various versions of Perl, 
+including recent versions with the C<uselongdouble> option enabled.
+Long doubles do not make any significant difference to the round
+trip precision of the routines, Perl's default arithmetic is more than
+adequate for the calculations required.  The loss of precision in round 
+trip testing appears to be inherent in the formulae published by the OS.
 
 =head2 Maps 
 

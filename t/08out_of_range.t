@@ -17,6 +17,6 @@ is(ll_to_grid_helmert(49,-2), '400096 -100086', "True origin of OSGB36 in WGS84 
 is(ll_to_grid_helmert(55.2597198486328,-6.1883339881897), '133985 604172', "Outside OSTN02");
 is(ll_to_grid_helmert(66,40), '2184572 2427658', "In the White Sea, NW Russia");
 
-is(sprintf("%g %g", grid_to_ll_helmert(538885, 177322)), '51.4778 -0.00147285', "RO Greenwich");
-is(sprintf("%g %g", grid_to_ll_helmert(400096,-100086)), '49 -2', "True origin of OSGB36 in WGS84 coordinates");
-is(sprintf("%g %g", grid_to_ll_helmert(133985, 604172)), '55.2597 -6.18834', "Outside OSTN02");
+is(sprintf("%.7g %.6g", grid_to_ll_helmert(538885, 177322)), '51.47781 -0.00147285', "RO Greenwich");
+is(sprintf("%.7g %.6g", grid_to_ll_helmert(400096,-100086)), '49 -2', "True origin of OSGB36 in WGS84 coordinates");
+is(sprintf("%.7g %.6g", grid_to_ll_helmert(133985, 604172)), '55.25972 -6.18834', "Outside OSTN02");

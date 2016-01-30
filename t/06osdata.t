@@ -92,8 +92,8 @@ for my $k ( sort keys %test_input ) {
     $minlone = $lon_error if $lon_error < $minlone;
 
     is($got_grid, $given_grid, "ll_to_grid for Station $k" );
-    ok($lat_error < ($lat < 55 ? 10 : 113), sprintf "Lat for %s %.6g %.3g mm", $k, $lat, $lat_error); # about 113 mm
-    ok($lon_error < 10,  sprintf "Lon for %s %.6g %.3g mm", $k, $lon, $lon_error); # about  10 mm
+    ok($lat_error < ($lat < 55 ? 10 : 113), sprintf "Lat for %s %.9g %.3g mm", $k, $lat, $lat_error); # about 113 mm
+    ok($lon_error < 10,  sprintf "Lon for %s %.9g %.3g mm", $k, $lon, $lon_error); # about  10 mm
 }
 #print "$minlate $maxlate -- $minlone $maxlone\n";
 
@@ -105,7 +105,7 @@ my @test_data = ();
 push @test_data, { grid => [452788,520697], gps => [54.578747, -1.184859, 48.329], xyz => [3704143.232593,  -76611.478515, 5174384.798039], sq => "NZ5220"}; 
 push @test_data, { grid => [481267,257208], gps => [52.207128, -0.812142, 47.431], xyz => [3916409.21937,   -55517.041028, 5016997.080619], sq => "SP8157"}; 
 push @test_data, { grid => [421176,317227], gps => [52.752264, -1.687695, 49.691], xyz => [3867013.25437,  -113939.043255, 5053944.064276], sq => "SK2117"}; 
-push @test_data, { grid => [ 88724,901972], gps => [57.89812,  -7.255943, 57.185], xyz => [3370501.932141, -429137.262071, 5379764.59814], sq => "NA8801"}; 
+push @test_data, { grid => [ 88725,901972], gps => [57.898121, -7.255926, 57.185], xyz => [3370501.932141, -429137.262071, 5379764.59814], sq => "NA8801"}; 
 push @test_data, { grid => [ 75537,860152], gps => [57.514799, -7.421059, 57.352], xyz => [3405037.296092, -443509.816804, 5356956.390959], sq => "NF7560"}; 
 push @test_data, { grid => [379729,556107], gps => [54.899281, -2.317626, 51.532], xyz => [3672795.235173, -148646.379371, 5194986.532721], sq => "NY7956"}; 
 push @test_data, { grid => [450194,324208], gps => [52.813107, -1.256732, 48.719], xyz => [3862369.694384,  -84731.245309, 5058038.525777], sq => "SK5024"}; 
@@ -116,14 +116,14 @@ push @test_data, { grid => [229282,676823], gps => [55.954001, -4.735895, 54.597
 push @test_data, { grid => [272130,244454], gps => [52.083637, -3.867554, 53.861], xyz => [3918711.351871, -264921.586214, 5008569.90597], sq => "SN7244"}; 
 push @test_data, { grid => [271900,369407], gps => [53.206266, -3.919454, 54.758], xyz => [3819401.025246,  -261683.53264, 5084368.958787], sq => "SH7169"}; 
 
-my $eps = 0.00000125; # about 10 cm
+my $eps = 0.0000025; # about 20 cm
 my $maxep = 0;
 my $maxel = 0;
 
 for my $t (@test_data) {
     is(format_grid(@{$t->{grid}}, { form=>'SSEENN' }), $t->{sq}, "Random square");
 
-    my ($lat, $lon) = grid_to_ll(@{$t->{grid}});
+    my ($lat, $lon) = map { sprintf "%.6f", $_ } grid_to_ll(@{$t->{grid}});
    
     my $dphi = abs($lat - $t->{gps}[0]);
     my $dlam = abs($lon - $t->{gps}[1]);
@@ -131,8 +131,8 @@ for my $t (@test_data) {
     $maxep = $dphi if $dphi > $maxep;
     $maxel = $dlam if $dlam > $maxel;
 
-    ok($dphi < $eps && $dlam < $eps, sprintf "%g %g (%g %g)", $lat, $lon, $dphi, $dlam);
+    ok($dphi < $eps && $dlam < $eps, sprintf "%s %s (%g %g)", $lat, $lon, $dphi, $dlam);
 
 }
 
-
+#print "$maxep $maxel\n";

@@ -1,6 +1,9 @@
 use strict;
 use warnings;
-use Geo::Coordinates::British_Maps qw(%maps);
+
+use Geo::Coordinates::OSGB       qw(ll_to_grid);
+use Geo::Coordinates::OSGB::Grid qw(format_grid);
+use Geo::Coordinates::OSGB::Maps qw(%maps);
 
 sub plot_poly {
     my ($path, $s) = @_;
@@ -23,7 +26,7 @@ my @draws;
 while (my ($k, $m) = each %maps) {
     my ($series, $label) = split ':', $k;
     # patch
-    $label = $m->{title};
+    $label = $m->{number};
 
     my $p = index($series_wanted, $series);
     next if $p < 0;
@@ -60,10 +63,9 @@ print $plotter 'for i=1 upto 12: label.lft(decimal 100i, (0,100i)); endfor',"\n"
 print $plotter 'for i=1 upto  7: label.bot(decimal 100i, (100i,0)); endfor',"\n";
 print $plotter 'label.llft("0",origin);',"\n";
 
-use Geo::Coordinates::OSGB qw(format_grid_trad ll_to_grid);
 for my $x (0..6) {
     for my $y (0..11) {
-        my ($sq, $e, $n) = format_grid_trad($x*100000,$y*100000);
+        my $sq = format_grid($x*100000,$y*100000, { form => 'SS' });
         print $plotter sprintf 'label("%s" infont "phvr8r" scaled 3, (%d,%d)) withcolor .8 white;', 
                                       $sq, 50+$x*100, 50+$y*100;
     }
@@ -71,6 +73,7 @@ for my $x (0..6) {
 
 print $plotter "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
 print $plotter "input gb-coast.mp;\n";
+print $plotter "input temp.mp;\n";
 
 print $plotter "drawoptions(withpen pencircle scaled 0.2);\n";
 print $plotter @draws;

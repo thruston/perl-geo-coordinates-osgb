@@ -242,7 +242,7 @@ package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.11';
+our $VERSION = '2.13';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
 our %name_for_map_series = ( 
@@ -270,7 +270,11 @@ print $perl "1;\n\n";
 print $perl <<'POD';
 =pod
 
-=head1 Data for OSGB Maps
+=head1 NAME
+
+Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
+
+=head1 SUBROUTINES AND METHODS
 
 This module exports no functions, but just two hashes of data.
 
@@ -279,7 +283,7 @@ This module exports no functions, but just two hashes of data.
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
 
-Currently (V2.11) we have
+Currently (V2.13) we have
 
   A => 'OS Landranger', 
   B => 'OS Explorer',
