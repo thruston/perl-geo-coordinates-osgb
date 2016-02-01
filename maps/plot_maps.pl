@@ -26,7 +26,7 @@ my @draws;
 while (my ($k, $m) = each %maps) {
     my ($series, $label) = split ':', $k;
     # patch
-    $label = $m->{number};
+    #$label = $m->{number};
 
     my $p = index($series_wanted, $series);
     next if $p < 0;
@@ -38,7 +38,7 @@ while (my ($k, $m) = each %maps) {
 print $plotter @fills;
 
 print $plotter "drawoptions(withpen pencircle scaled 0.4);\n";
-for my $lon (-9..2) {
+for my $lon (-11..2) {
     my @points = ();
     for my $lat (496..612) {
         push @points, sprintf '(%.1f,%.1f)', map { $_/1000 } ll_to_grid($lat/10,$lon);
@@ -48,7 +48,7 @@ for my $lon (-9..2) {
 }
 for my $lat (50..61) {
     my @points = ();
-    for my $lon (-92..22) {
+    for my $lon (-112..22) {
         push @points, sprintf '(%.1f,%.1f)', map { $_/1000 } ll_to_grid($lat,$lon/10);
     }
     print $plotter 'draw ', join('..', @points), ' withcolor .7[.5 green,white];';
@@ -72,8 +72,7 @@ for my $x (0..6) {
 }
 
 print $plotter "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
-print $plotter "input gb-coast.mp;\n";
-print $plotter "input temp.mp;\n";
+print $plotter "input british-isles.mp;\n";
 
 print $plotter "drawoptions(withpen pencircle scaled 0.2);\n";
 print $plotter @draws;

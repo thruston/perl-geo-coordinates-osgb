@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Geo::Coordinates::British_Maps qw(%maps);
+use Geo::Coordinates::OSGB::Maps qw(%maps);
 
 sub overlap_or_touch {
     my ($a,$b) = @_;
@@ -15,7 +15,7 @@ my $mp_file = 'outlines.mp';
 
 open(my $plotter, '>', $mp_file);
 print $plotter "prologues := 3; outputtemplate := \"outlines$series_wanted.svg\"; outputformat:=\"svg\";\n";  
-print $plotter "beginfig(1); path p[]; color orange, pink, red;\n"; 
+print $plotter "beginfig(1); defaultfont := \"phvr8r\"; defaultscale := 1/2; path p[]; color orange, pink, red;\n"; 
 print $plotter "orange = ( 221/255, 61/255, 31/255 ); pink = (224/255,36/255,114/255); red = (228/255, 0, 28/255);\n";
 
 my @draws;
@@ -33,21 +33,28 @@ for my $k (sort keys %maps) {
     my $out = sprintf 'p%d:=%s; draw p%d withcolor %s;', $path_number_for{$k}, $path, $path_number_for{$k}, $color; 
     # adjustments for OL maps
     my $textcolor = $label =~ m{\AOL}osxi ? 'blue' : $color;
-    my $adjust    = $label =~ m{\AOL}osxi ? '+2' : '-2'; 
     if ( $k eq $m->{parent} ) {
-        $out .= "label(\"$label\" infont \"phvb8r\" scaled 0.5, center p$path_number_for{$k} shifted (0,$adjust)) withcolor .5[$textcolor,white];"; 
+        if ( my ($old, $new) = $label =~ m{\A(\d+)/(OL.+)\Z}mosxi ) {
+            $out .= sprintf 'label("%s", center p%s shifted 2 up) withcolor .4[orange,white];', $old, $path_number_for{$k}; 
+            $out .= sprintf 'label("%s", center p%s shifted 2 down) withcolor .4[blue,white];', $new, $path_number_for{$k}; 
+        }
+        else { 
+            $out .= sprintf 'label("%s", center p%s)  withcolor .4[%s,white];', $label, $path_number_for{$k}, $textcolor; 
+        }
     }
     elsif ( overlap_or_touch($m->{bbox}, $maps{$m->{parent}}->{bbox} )) {
         #warn "No connector for $k\n";
     }
     else {
         push @inset_connectors, sprintf "draw center p%d -- center p%d cutbefore p%d cutafter p%d dashed withdots scaled 0.2  withcolor %s;\n",
-                                $path_number_for{$k}, $path_number_for{$m->{parent}},
-                                $path_number_for{$k}, $path_number_for{$m->{parent}},
-                                $color;
+        $path_number_for{$k}, $path_number_for{$m->{parent}},
+        $path_number_for{$k}, $path_number_for{$m->{parent}},
+        $color;
     }
     push @draws, "$out\n";
 }
+print $plotter "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
+print $plotter "input british-isles.mp;\n";
 
 print $plotter "drawoptions(withpen pencircle scaled 0.2 withcolor .7 white);\n";
 print $plotter 'for i=1 upto 12: draw (0,100i) --  (700,100i); endfor',"\n";

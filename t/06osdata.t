@@ -135,4 +135,3 @@ for my $t (@test_data) {
 
 }
 
-#print "$maxep $maxel\n";
