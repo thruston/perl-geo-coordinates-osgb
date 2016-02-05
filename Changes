@@ -2,7 +2,7 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
 2.13 February 2016
 
-    - Faster OSTN02 data look up 
+    - Re-organized, and much faster, OSTN02 data look up 
 
     - format_grid now supports ... { form => 'SS' } ... to get just the grid square.
 
