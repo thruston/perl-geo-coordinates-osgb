@@ -1,9 +1,4 @@
 use strict;
 use warnings;
-
-use Geo::Coordinates::OSGB qw{parse_grid format_grid_map};
-
-my $bng = $ARGV[0];
-
-my ($e, $n) = parse_grid($bng);
-printf "%s -> %s\n", $bng, scalar format_grid_map($e,$n);
+use Geo::Coordinates::OSGB::Grid qw{parse_grid format_grid};
+print scalar format_grid(parse_grid("@ARGV"), { maps => 1 }), "\n";
