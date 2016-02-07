@@ -13,7 +13,7 @@ use Pod::Usage;
 use File::Temp;
 use Carp;
 
-my $version = '2.13';
+my $version = '2.14';
 
 =pod
 
@@ -28,7 +28,7 @@ provided by L<Geo::Coordinates::OSGB::Maps>.
 
 =head1 VERSION
 
-2.13
+2.14
 
 =head1 SYNOPSIS
 
@@ -137,7 +137,7 @@ through C< ... map { $_/$scale } ... >.
 
 The implementation of C<Geo::Coordinates::OSGB::Maps> is experimental and may change 
 significantly in future releases.  Possibly the exist hash exports will be replaced
-by a more sophisicated object-oriented interface.
+by a more sophisticated object-oriented interface.
 In the mean while, this programme shows how to use the current map data.
 
 To plot a map, it's best to join up the points returned by C<< $maps{$k}->{polygon} >>

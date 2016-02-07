@@ -9,7 +9,7 @@ use Carp;
 use 5.008; # At least Perl 5.8 please
 use POSIX qw/floor/;
 
-our $VERSION = '2.13';
+our $VERSION = '2.14';
 
 our %EXPORT_TAGS = (
     all => [ qw( 
@@ -426,7 +426,7 @@ There are two other special formats:
 In a list context, this option means that the individual components are returned
 appropriately truncated as shown.  So with C<SS EEE NNN> you get back C<('SU', 387, 147)>
 and B<not> C<('SU', 387.10908, 147.92248)>.  The format can be given as upper case or lower
-case or a mixture.  If you want just the local eastings and northings without the 
+case or a mixture.  If you want just the local easting and northing without the 
 grid square, get the individual parts in a list context and format them yourself:
 
     my $gr = sprintf('Grid ref %2$s %3$s on Sheet %4$s', format_grid_landranger($e, $n))
@@ -505,7 +505,7 @@ map numbers are in the list of sheets.
 
 For more examples of formatting look at the test files.
 
-=head2 Suboutines to extract (easting, northing) pairs from grid references
+=head2 Subroutines to extract (easting, northing) pairs from grid references
 
 =over 4
 
@@ -598,7 +598,7 @@ leave them out to get just the SW corner of the sheet.  This functionality has b
 removed in this version, because it's not always obvious where the SW corner of a 
 sheet is (for an example look at the inset on Landranger sheet 107).
 
-If you need access to the postion of the sheets in this version, you should work directly with
+If you need access to the position of the sheets in this version, you should work directly with
 the data in L<Geo::Coordinates::OSGB::Maps>.
 
 =back  
@@ -687,7 +687,7 @@ me about it.
 =head1 CONFIGURATION AND ENVIRONMENT
 
 There is no configuration required either of these modules or your
-environment.  It should work on any recent version of perl better than 5.8, 
+environment.  It should work on any recent version of Perl better than 5.8, 
 on any platform.
 
 =head1 DEPENDENCIES

@@ -4,8 +4,9 @@ use strict;
 use warnings;
 use Carp;
 use 5.008; # at least Perl 5.8 please
+use POSIX qw/floor/;
 
-our $VERSION = '2.13';
+our $VERSION = '2.14';
 our @EXPORT_OK = qw( ll_to_grid grid_to_ll 
                      ll_to_grid_helmert grid_to_ll_helmert
                      set_default_shape _ostn_timer)
@@ -40,6 +41,7 @@ while (<DATA>) {
     push @ostn_data, $_
 }
 close DATA; # closing the DATA file handle supresses annoying additions to any error messages
+my %ostn_shifts_for;
 
 sub set_default_shape {
     my $s = shift;
@@ -159,12 +161,10 @@ sub ll_to_grid {
     }
 
     # now shape is WGS84 etc so we must adjust
-    if (0 <= $e && 0 <= $n ) {
-        my ($dx, $dy) = _find_OSTN02_shifts_at($e,$n);
-        if ($dx != 0 && $dy != 0 ) {
-            my @out = map { sprintf '%.3f', $_ } ($e + $dx, $n + $dy);
-            return wantarray ? @out : "@out";
-        }
+    my ($dx, $dy) = _find_OSTN02_shifts_at($e,$n);
+    if ($dx) {
+        my @out = map { sprintf '%.3f', $_ } ($e + $dx, $n + $dy);
+        return wantarray ? @out : "@out";
     }
 
     # still here? Then do Helmert shift into OSGB36 and re-project
@@ -222,11 +222,17 @@ sub _find_OSTN02_shifts_at {
 
     my ($x, $y) = @_;
 
-    my $e_index = int($x/1000);
-    my $n_index = int($y/1000);
+    my $e_index = floor $x/1000;
+    my $n_index = floor $y/1000;
 
-    my ($se0,$sn0,$se1,$sn1) = _get_ostn_pair($e_index, $n_index);   return (0,0) unless $se0;
-    my ($se2,$sn2,$se3,$sn3) = _get_ostn_pair($e_index, $n_index+1); return (0,0) unless $se2;
+    return if $n_index   < 0;
+    return if $n_index+1 > $#ostn_data;
+
+    my $lo_pair_ref = _get_ostn_pair_reference($e_index, $n_index)   or return;
+    my $hi_pair_ref = _get_ostn_pair_reference($e_index, $n_index+1) or return;
+
+    my ($se0,$sn0,$se1,$sn1) = @$lo_pair_ref;
+    my ($se2,$sn2,$se3,$sn3) = @$hi_pair_ref;
 
     my $x0 = int($e_index . '000');
     my $y0 = int($n_index . '000');
@@ -248,12 +254,14 @@ sub _find_OSTN02_shifts_at {
     return ($se, $sn);
 }
 
-sub _get_ostn_pair {
+sub _get_ostn_pair_reference {
     my $x = shift;
     my $y = shift;
+    my $k = sprintf "%03d%03d", $x, $y;
 
-    return if $y < 0;
-    return if $y > $#ostn_data;
+    if ( exists $ostn_shifts_for{$k} ) {
+        return $ostn_shifts_for{$k}
+    }
 
     my $leading_zeros = int substr $ostn_data[$y], 0, 3;
 
@@ -274,7 +282,7 @@ sub _get_ostn_pair {
     $shifts[2] += MIN_X_SHIFT;
     $shifts[3] += MIN_Y_SHIFT;
 
-    return map { $_ / 1000 } @shifts;
+    return $ostn_shifts_for{$k} = [ map { $_ / 1000 } @shifts ]; 
 }
 
 sub _ostn_timer {
@@ -289,8 +297,8 @@ sub _ostn_timer {
 
     warn "Comparing ll_to_grid with OSTN02 and Helmert\n";
     cmpthese( -5, {
-        OSTN02  => sub{ ll_to_grid(51.5,-2.14)},
-        Helmert => sub{ ll_to_grid_helmert(51.5,-2.14)},
+        OSTN02  => sub{ my $a=51+2*rand; my $b=0-3*rand; ll_to_grid($a, $b)},
+        Helmert => sub{ my $a=51+2*rand; my $b=0-3*rand; ll_to_grid_helmert($a, $b)},
     } );
     warn "Comparing grid_to_ll with OSTN02 and Helmert\n";
     cmpthese( -5, {
@@ -321,30 +329,28 @@ sub grid_to_ll {
     }
 
     # If we want WGS84 LL, we must adjust to pseudo grid if we can
-    if (0 <= $e && 0 <= $n ) {
-        my ($dx, $dy) = _find_OSTN02_shifts_at($e,$n);
-        if ($dx != 0 && $dy != 0) {
-            my $in_ostn02_polygon = 1;
-            my ($x,$y) = ($e-$dx, $n-$dy);
-            my ($last_dx, $last_dy) = ($dx, $dy);
-            APPROX:
-            for (1..20) { 
-                ($dx, $dy) = _find_OSTN02_shifts_at($x,$y);
+    my ($dx, $dy) = _find_OSTN02_shifts_at($e,$n);
+    if ($dx) {
+        my $in_ostn02_polygon = 1;
+        my ($x,$y) = ($e-$dx, $n-$dy);
+        my ($last_dx, $last_dy) = ($dx, $dy);
+        APPROX:
+        for (1..20) { 
+            ($dx, $dy) = _find_OSTN02_shifts_at($x,$y);
+            
+            if (!$dx) {
+                # we have been shifted off the edge
+                $in_ostn02_polygon = 0;
+                last APPROX
+            }
                 
-                if ($dx == 0) {
-                    # we have been shifted off the edge
-                    $in_ostn02_polygon = 0;
-                    last APPROX
-                }
-                    
-                ($x,$y) = ($e-$dx, $n-$dy);
-                last APPROX if abs($dx-$last_dx) < TENTH_MM
-                            && abs($dy-$last_dy) < TENTH_MM;
-                ($last_dx, $last_dy) = ($dx, $dy);
-            }
-            if ($in_ostn02_polygon ) {
-                return _reverse_project_onto_ellipsoid($e-$dx, $n-$dy, 'WGS84')
-            }
+            ($x,$y) = ($e-$dx, $n-$dy);
+            last APPROX if abs($dx-$last_dx) < TENTH_MM
+                        && abs($dy-$last_dy) < TENTH_MM;
+            ($last_dx, $last_dy) = ($dx, $dy);
+        }
+        if ($in_ostn02_polygon ) {
+            return _reverse_project_onto_ellipsoid($e-$dx, $n-$dy, 'WGS84')
         }
     }
 
@@ -563,7 +569,7 @@ like this:
 
     my ($e, $n) = ll_to_grid(49,-2, {shape => 'OSGB36'});
 
-Incidentially if you make this call above you will get back
+Incidentally, if you make this call above you will get back
 (400000,-100000) which are the coordinates of the `true point of
 origin' of the British grid.  You should get back an easting of
 400000 for any point with longtitude 2W since this is the central
@@ -623,7 +629,7 @@ the rounding that is appropriate for your application.  Here's one way to do tha
 The default ellipsoid shape used for conversion to and from latitude and longitude
 is normally `WGS84' as used in the international GPS system.  But you can use this 
 function to set the default shape to `OSGB36' if you want to process or produce latitude and longitude
-coordinates in the British Ordnance Survey sytem (as printed round the edges of OS Landranger maps).
+coordinates in the British Ordnance Survey system (as printed round the edges of OS Landranger maps).
 You can also use this function to set the shape back to `WGS84' again when finished.
 
 =head3 C<ll_to_grid_helmert(lat, lon)>
@@ -692,8 +698,8 @@ neither C<$a==$a1> nor C<$b==$b1> exactly.  The degree of the error
 depends on where you are and which transformation you are doing.  
 
 For all of England, Wales, and the Isle of Man the error will be tiny.
-Converting from WGS84 latitude and longtitude should give you results accurate
-to 1mm in most cases.  Converting the otherway is slightly less accurate, but
+Converting from WGS84 latitude and longitude should give you results accurate
+to 1mm in most cases.  Converting the other way is slightly less accurate, but
 any error should be less than 1cm in these areas.
 
 For mainland Scotland, the Hebrides and Orkney, translating lat/lon to
@@ -736,7 +742,7 @@ doing, fourthly get in touch to ask me about it.
 =head1 CONFIGURATION AND ENVIRONMENT
 
 There is no configuration required either of these modules or your
-environment.  It should work on any recent version of perl, on any
+environment.  It should work on any recent version of Perl, on any
 platform.
 
 =head1 DEPENDENCIES

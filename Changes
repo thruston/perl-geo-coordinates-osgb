@@ -1,5 +1,11 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
+2.14 March 2016
+
+    - Further performance improvements to OSTN02 data look up
+
+    - Fixed various typos in Pod sections
+
 2.13 February 2016
 
     - Re-organized, and much faster, OSTN02 data look up 

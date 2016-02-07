@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid_landranger/;
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = '2.13';
+my $version = '2.14';
 
 =pod
 
@@ -24,7 +24,7 @@ This programme shows off some features of L<Geo::Coordinates::OSGB>.
 
 =head1 VERSION
 
-2.13
+2.14
 
 =head1 SYNOPSIS
 

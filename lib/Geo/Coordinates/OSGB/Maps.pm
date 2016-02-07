@@ -2,7 +2,7 @@ package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.13';
+our $VERSION = '2.14';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
 our %name_for_map_series = ( 

@@ -13,7 +13,7 @@ use Browser::Open qw(open_browser);
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = '2.13';
+my $version = '2.14';
 
 sub format_grid_streetmap {
     my $e = shift;
@@ -53,7 +53,7 @@ This programme shows off some features of L<Geo::Coordinates::OSGB>.
 
 =head1 VERSION
 
-2.13
+2.14
 
 =head1 SYNOPSIS
 
@@ -81,8 +81,8 @@ Print version and exit.
 
 This script picks a random spot in the British Isles and shows you it on Streetmap.co.uk and 
 on Google maps;  this lets you compare the OS and the Google maps side by side for the same
-area - sometimes you'll end up in the sea, but you'll always be on one of the Landranger sheets
-It's surprisingly additictive...
+area - sometimes you'll end up in the sea, but you'll always be on one of the Landranger or Explorer sheets.
+It's surprisingly addictive...
 
 PS the Google maps parameters are the result of experimentation rather than any API documentation
 so I've no idea what the data parameter does, but it seems to be necessary.  The "14z" controls the 
