@@ -2,9 +2,12 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
 2.14 March 2016
 
+    - Found and fixed a bug the core ellipsoid projection routine that was causing 
+      the unexpectedly inaccurate results in higher latitudes
+
     - Further performance improvements to OSTN02 data look up
 
-    - Fixed various typos in Pod sections
+    - Fixed various typos in Pod sections in all modules
 
 2.13 February 2016
 

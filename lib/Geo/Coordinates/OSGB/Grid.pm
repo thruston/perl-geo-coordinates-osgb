@@ -226,7 +226,8 @@ sub _get_eastnorthings {
     my $numbers = $s;
     $numbers =~ tr/0-9//cd; # avoid using "r" here as it requires perl >= 5.14
     my $len = length $numbers;
-    croak "No easting or northing found" if $len == 0;
+    return (0,0) if $len == 0;
+    #croak "No easting or northing found" if $len == 0;
     croak "Easting and northing have different lengths in $s" if $len % 2;
     croak "Too many digits in $s" if $len > 10;
     my $e = reverse sprintf "%05d", scalar reverse substr $numbers, 0, $len/2;

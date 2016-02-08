@@ -1,4 +1,4 @@
-# Toby Thurston -- 03 Feb 2016 
+# Toby Thurston -- 07 Feb 2016 
 # Plot a nice picture of a series of maps
 
 use strict;
@@ -35,7 +35,7 @@ provided by L<Geo::Coordinates::OSGB::Maps>.
 This programme shows off several features of L<Geo::Coordinates::OSGB>.
 
   perl plot_maps.pl --series A --paper A3 --outfile some.pdf 
-                    --[no]grid --[no]graticule --[no]towns
+                    --[no]grid --[no]graticule --[no]towns --[no]ostn
                     --coastfile gb-coastline.shapes
 
 If you have a working TeXLive installation with GhostScript installed,
@@ -77,6 +77,10 @@ Show lines of latitude and longitude.  Turn off with C<--nograt>.  Default on.
 =item --[no]towns
 
 Show a few major cities in the background.  Turn off with C<--notowns>.
+
+=item --[no]ostn
+
+Show the boundaries of the OSTN02 transformation dataset.  Default is off.
 
 =item --coastfile shapefile.txt
 
@@ -188,6 +192,7 @@ my $paper_size      = 'A3';
 my $show_grid       = 1;    
 my $show_graticule  = 1;
 my $show_towns      = 1;
+my $show_ostn02     = 0;
 my $coast_shapes    = 'gb-coastline.shapes';
 my $pdf_filename;
 
@@ -197,6 +202,7 @@ my $options_ok = GetOptions(
     'grid!'       => \$show_grid,                                   
     'graticule!'  => \$show_graticule,                              
     'towns!'      => \$show_towns,
+    'ostn!'       => \$show_ostn02,
     'outfile=s'   => \$pdf_filename,
     'coastfile=s' => \$coast_shapes,
     
@@ -417,6 +423,15 @@ if ( $series_wanted && exists $name_for_map_series{$series_wanted} ) {
         }
     }
 
+}
+
+my $obp_file = 'ostn02-boundary-points.txt';
+if ($show_ostn02 && -f $obp_file && open my $obp, '<', $obp_file) {
+    # Add OSTN02 boundary
+    printf $plotter 'drawoptions(withpen pencircle scaled %g withcolor (.6,.64,.84));', 900/$scale;
+    while ( <$obp> ) {
+        printf $plotter "drawdot(%g,%g);\n", map { $_*1000/$scale } split;
+    }
 }
 
 # Add a margin

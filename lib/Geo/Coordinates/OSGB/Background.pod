@@ -333,24 +333,15 @@ In all cases translating from the WGS84 coordinates to the national
 grid is accurate to the millimetre, so these modules are at least as
 accurate as the OSGB's own software that produced the test data.
 
-Translating from the given grid coordinates to WGS84 latitude and
-longitude coordinates is less accurate. This appears to be related
-to the iterative approach required but there is no obvious reason.
-Moreover there is a pattern to the errors.  In all of England and
-Wales, this software produces WGS lat/lon coordinates from the given
-grid references that are within a few mm of the OSGB data.  However
-in Scotland, and especially for those stations that are further
-north and west the latitude coordinates produced are up to 12cm out, 
-while the longitude coordinates are about 1cm out.  This may be
-because the OS test data has some bias, or it may be a feature of
-the mathematics.  Either way, that is what is achievable with the OS
-test data, and your results are likely to be similar, provided you have
-access to such accurate data readings in the first place.
+Translating from the given grid coordinates to WGS84 latitude and longitude
+coordinates is very slightly less accurate, but in all of England, Wales,
+Scotland and the Isle of Man this software produces WGS84 lat/lon coordinates
+from the given grid references that are within a few mm of the OSGB data.  
 
 Outside the area covered by OSTN02 this module uses the small
 Helmert transformation recommended by the OS.  The OS state, that
 with the parameters they provide, this transformation will be
-accurate up to about 5m within the immediate vicinity of the British
+accurate up to about 5m within the vicinity of the British
 Isles.  
 
 You can also use this transformation within the OSTN02 polygon by calling
@@ -362,30 +353,31 @@ In the South East both easting and northing are underestimated,
 in northern Scotland they tend to be overestimated.
 
 If you can live with this level of uncertainty, then you will find that the
-Helmert routines are a bit faster.  A typical benchmarking run on my development
-machine (an old Mac Mini server) using the Apple-supplied Perl 5.16 gave:
+Helmert routines are a bit faster at translating from grid to latitude and
+longitude.  A typical benchmarking run on my development machine (an old Mac
+Mini server) using the Apple-supplied Perl 5.16 gave:
 
     Subroutine          calls per sec  ms per call 
     ----------------------------------------------
-    ll_to_grid                  26750        0.037 
-    ll_to_grid_helmert          35208        0.028 
-    grid_to_ll                   9916        0.101 
-    grid_to_ll_helmert          28386        0.035 
+    ll_to_grid                  35663        0.028 
+    ll_to_grid_helmert          36745        0.027 
+    grid_to_ll                  14033        0.071 
+    grid_to_ll_helmert          28762        0.035 
 
-None of the routines is really slow, since even C<grid_to_ll> averages about
-0.1 ms per call, but C<ll_to_grid_helmert> runs about 30% faster
-than C<ll_to_grid>, and C<grid_to_ll_helmert> nearly 3 times faster than
+None of the routines is really slow, since even C<grid_to_ll> averages well
+under 0.1 ms per call, but C<grid_to_ll_helmert> runs about twice as fast as
 C<grid_to_ll>.  Using a locally compiled version of Perl 5.22, I see an
-improvement of about 10%-15% in general on these numbers.
+improvement of almost 10% on the Helmert routines, but the OSTN02 routines are
+about the same.
 
 `Your mileage may vary', of course.
 
 The routines have been tested with various versions of Perl, including recent
 versions with the C<uselongdouble> option enabled.  On my system, long doubles
-slow everything down by about 10%, and make no significant difference to the
-round trip precision of the routines. Perl's default arithmetic is more than
-adequate for the calculations required.  The loss of precision in round trip
-testing appears to be inherent in the formulae published by the OS.
+slow everything down by about 10%, and make no difference to the round trip
+precision of the routines. Since the formulae were specifically designed for
+ordinary double precision arithmetic, Perl's default arithmetic is more than
+adequate.  
 
 
 =head2 Maps 

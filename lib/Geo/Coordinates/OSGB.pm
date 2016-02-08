@@ -9,7 +9,7 @@ use POSIX qw/floor/;
 our $VERSION = '2.14';
 our @EXPORT_OK = qw( ll_to_grid grid_to_ll 
                      ll_to_grid_helmert grid_to_ll_helmert
-                     set_default_shape _ostn_timer)
+                     set_default_shape)
                     ; 
 
 my %ellipsoid_shapes = (
@@ -21,14 +21,31 @@ my %ellipsoid_shapes = (
 
 my $default_shape = 'WGS84';
 
+sub set_default_shape {
+    my $s = shift;
+    croak "Unknown shape: $s" if !exists $ellipsoid_shapes{$s};
+    $default_shape = $s;
+    return;
+}
+
+sub _as_radians {
+    my $angle = shift;
+    return $angle / 57.29577951308232087679815481410517;
+}
+
+sub _as_degrees {
+    my $angle = shift;
+    return $angle * 57.29577951308232087679815481410517;
+}
+
 # constants for OSGB mercator projection
-use constant ORIGIN_LONGITUDE    => -2 * 0.017453292519943295769236907684886127134428718885417;
-use constant ORIGIN_LATITUDE     => 49 * 0.017453292519943295769236907684886127134428718885417;
-use constant ORIGIN_EASTING      => 400_000;
+use constant ORIGIN_LONGITUDE    => _as_radians(-2);
+use constant ORIGIN_LATITUDE     => _as_radians(49);
+use constant ORIGIN_EASTING      =>  400_000;
 use constant ORIGIN_NORTHING     => -100_000;
 use constant CONVERGENCE_FACTOR  => 0.9996012717;
 
-# constants for OSTN02
+# constants for OSTN02 data
 use constant MIN_X_SHIFT =>  86000;
 use constant MIN_Y_SHIFT => -82000;
 
@@ -42,23 +59,6 @@ while (<DATA>) {
 }
 close DATA; # closing the DATA file handle supresses annoying additions to any error messages
 my %ostn_shifts_for;
-
-sub set_default_shape {
-    my $s = shift;
-    croak "Unknown shape: $s" if !exists $ellipsoid_shapes{$s};
-    $default_shape = $s;
-    return;
-}
-
-sub _as_radians {
-    my $angle = shift;
-    return $angle * 0.017453292519943295769236907684886127134428718885417;
-}
-
-sub _as_degrees {
-    my $angle = shift;
-    return $angle * 57.295779513082320876798154814105170332405472466564;
-}
 
 sub _llh_to_cartesian {
     my ($lat, $lon, $H, $shape) = @_;
@@ -285,28 +285,6 @@ sub _get_ostn_pair_reference {
     return $ostn_shifts_for{$k} = [ map { $_ / 1000 } @shifts ]; 
 }
 
-sub _ostn_timer {
-    use Benchmark qw{cmpthese timediff timestr};
-    my ($se, $sn);
-    my $t0 = Benchmark->new;
-    for (1..10000) {
-        ($se, $sn) = _find_OSTN02_shifts_at(int rand 700000, int rand 1250000);
-    }
-    my $t1 = Benchmark->new;
-    warn "10k OSTN look ups took:", timestr(timediff($t1, $t0)), "\n";
-
-    warn "Comparing ll_to_grid with OSTN02 and Helmert\n";
-    cmpthese( -5, {
-        OSTN02  => sub{ my $a=51+2*rand; my $b=0-3*rand; ll_to_grid($a, $b)},
-        Helmert => sub{ my $a=51+2*rand; my $b=0-3*rand; ll_to_grid_helmert($a, $b)},
-    } );
-    warn "Comparing grid_to_ll with OSTN02 and Helmert\n";
-    cmpthese( -5, {
-        OSTN02  => sub{ grid_to_ll(393154.801, 177900.605)},
-        Helmert => sub{ grid_to_ll_helmert(393154, 177900)},
-    } );
-}
-
 sub grid_to_ll {
 
     my ($e, $n, $options) = @_;
@@ -382,7 +360,7 @@ sub _reverse_project_onto_ellipsoid {
     my $M;
     while (1) {
         $M = _compute_big_m($phi, $b, $n);
-        last if ($dn-$M < HUNDREDTH_MM);
+        last if abs($dn-$M) < HUNDREDTH_MM;
         $phi = $phi + ($dn-$M)/$af;
     }
 
@@ -498,33 +476,37 @@ Neither of these is exported by default.
 
 =head3 C<ll_to_grid(lat,lon)>
 
-When called in a list context, C<ll_to_grid> returns two numbers
-that represent the easting and the northing corresponding to the
-latitude and longitude supplied.  In a scalar context the two
-numbers will be returned in a string separated by spaces.
+C<ll_to_grid> translates a latitude and longitude pair into 
+a grid easting and northing pair.
 
-The parameters should be supplied as real numbers representing
+When called in a list context, C<ll_to_grid> returns the easting and northing
+as a list of two.  When called in a scalar context, it returns a single string
+with the numbers separated by spaces.
+
+The arguments should be supplied as real numbers representing
 decimal degrees, like this
 
     my ($e,$n) = ll_to_grid(51.5, -2.1); # (393154.801, 177900.605)
 
-Following the normal convention, positive numbers mean North or
-East, negative South or West.  If you have data with degrees,
-minutes and seconds, you can convert them to decimals like this:
+Following the normal convention, positive arguments mean North or
+East, negative South or West.  
+
+If you have data with degrees, minutes and seconds, you can convert them to
+decimals like this:
 
     my ($e,$n) = ll_to_grid(51+25/60, 0-5/60-2/3600);
 
 If you have trouble remembering the order of the arguments, or the
 returned values, note that latitude comes before longitude in the
-alphabet too, as easting comes before northing.  However since reasonable
-latitudes for the OSGB are in the range 49 to 61, and reasonable
-longitudes in the range -9 to +2, C<ll_to_grid> accepts argument in
-either order.  If your longitude is larger than your latitude, then the
-values of the arguments will be silently swapped.  
+alphabet too, as easting comes before northing.  
 
-If all that is too confusing for you, you can also supply the
-arguments as named keywords (but be sure to use the curly braces so
-that you pass them as a reference):
+However since reasonable latitudes for the OSGB are in the range 49 to 61, and
+reasonable longitudes in the range -9 to +2, C<ll_to_grid> accepts argument in
+either order.  If your longitude is larger than your latitude, then the values
+of the arguments will be silently swapped.  
+
+You can also supply the arguments as named keywords (but be sure to use the
+curly braces so that you pass them as a reference):
 
     my ($e,$n) = ll_to_grid( { lat => 51.5, lon => 2.1 } );
 
@@ -535,9 +517,9 @@ point some way to the south-west of the Scilly Isles).
     my ($e,$n) = ll_to_grid(51.5, -2.1); # (393154.801, 177900.605)
     my $s      = ll_to_grid(51.5, -2.1); # "393154.801 177900.605"
 
-If the coordinates you supply are in the area covered by the OS's
-OSTN02 transformation dataset, then the results will be rounded to 3
-decimal places, which gives you accuracy down to the nearest mm.  If
+If the coordinates you supply are in the area covered by the 
+OSTN02 transformation data, then the results will be rounded to 3
+decimal places, which corresponds to the nearest millimetre.  If
 they are outside the coverage (which normally means more than a few
 km off shore) then the conversion is automagically done using a
 Helmert transformation instead of the OSTN02 data.  The results will
@@ -556,7 +538,7 @@ reference format you should pass the results to one of the grid
 formatting routines from L<Grid.pm|Geo::Coordinates::OSGB::Grid>.
 Like this.
 
-    $gridref = format_grid_trad(ll_to_grid(51.5,-0.0833)); 
+    $gridref = format_grid(ll_to_grid(51.5,-0.0833)); 
     $gridref = format_grid_GPS(ll_to_grid(51.5,-0.0833)); 
     $gridref = format_grid_map(ll_to_grid(51.5,-0.0833));
 
@@ -598,6 +580,8 @@ absolute grid reference in metres from the point of origin.  You can
 get these from a traditional grid reference string by calling
 C<parse_grid()> first.
 
+    my ($lat, $lon) = grid_to_ll(parse_grid('SM 349 231'))
+
 An optional last argument defines the ellipsoid model to use just as
 it does for C<ll_to_grid()>.  This is only necessary is you are
 working with an ellipsoid model other than WGS84.  
@@ -610,14 +594,16 @@ of them (this is strictly optional):
 
     my ($lat, $lon) = grid_to_ll({ e => 400000, n => 300000, shape => 'OSGB36'});
 
-The results returned will be floating point numbers with the default Perl precision.
-Unless you are running with long double precision floats you will get 13 decimal places
-for latitude and 14 places for longitude.  This does not mean that the calculations 
-are accurate to that many places.  The OS online conversion tools return decimal degrees 
-to only 6 places.  A difference of 1 in the sixth decimal place represents a distance on the ground 
-of about 10 cm.  This is probably a good rule of thumb for these calculations.
-However all the available decimal places are returned so that you can choose 
-the rounding that is appropriate for your application.  Here's one way to do that:
+The results returned will be floating point numbers with the default Perl
+precision.  Unless you are running with long double precision floats you
+will get 13 decimal places for latitude and 14 places for longitude;  but
+this does not mean that the calculations are accurate to that many places.
+The OS online conversion tools return decimal degrees to only 6 places.  A
+difference of 1 in the sixth decimal place represents a distance on the
+ground of about 10 cm.  This is probably a good rule of thumb for the
+reliability of these calculations, but all the available decimal places are
+returned so that you can choose the rounding that is appropriate for your
+application.  Here's one way to do that:
 
     my ($lat, $lon) = map { sprintf "%.6f", $_ } grid_to_ll(431234, 312653);
 
@@ -626,38 +612,45 @@ the rounding that is appropriate for your application.  Here's one way to do tha
 
 =head3 C<set_default_shape(shape)>
 
-The default ellipsoid shape used for conversion to and from latitude and longitude
-is normally `WGS84' as used in the international GPS system.  But you can use this 
-function to set the default shape to `OSGB36' if you want to process or produce latitude and longitude
-coordinates in the British Ordnance Survey system (as printed round the edges of OS Landranger maps).
-You can also use this function to set the shape back to `WGS84' again when finished.
+The default ellipsoid shape used for conversion to and from latitude and
+longitude is `WGS84' as used in the international GPS system.  This default
+it set every time that  you load the module.  If you want to process or
+produce a large number latitude and longitude coordinates in the British
+Ordnance Survey system (as printed round the edges of OS Landranger maps).
+you can use C<< set_default_shape('OSGB36'); >> to set the default shape to
+OSGB36.  This saves you having to add C<< { shape => 'OSGB36' } >> to
+every call of C<ll_to_grid> or C<grid_to_ll>.
+
+You can use C<< set_default_shape('WGS84'); >> to set the default shape back
+to WGS84 again when finished with OSGB36 coordinates.
 
 =head3 C<ll_to_grid_helmert(lat, lon)>
 
-You can use this function to do a quick conversion from WGS84 lat/lon to the OS
-grid without using the whole OSTN02 dataset.  The algorithm used is known as a
-Helmert transformation.  This is the usual coordinate conversion implemented in
-most consumer-level GPS devices.  It is based on parameters supplied by the OS;
-they suggest that in most of the UK this conversion is accurate to within about
-5m.   
+You can use this function to do a quicker conversion from WGS84 lat/lon to
+the OS grid without using the whole OSTN02 dataset.  The algorithm used is
+known as a Helmert transformation.  This is the usual coordinate conversion
+algorithm implemented in most consumer-level GPS devices.  It is based on
+parameters supplied by the OS; they suggest that in most of the UK this
+conversion is accurate to within about 5m.   
 
     my ($e, $n) = ll_to_grid_helmert(51.477811, -0.001475);  # RO Greenwich
 
-The input must be decimal degrees in the WGS84 model.  The results are rounded
-to the nearest whole metre.  They can be used with C<format_grid> in the same
-way as the results from C<ll_to_grid>.  
+The input must be decimal degrees in the WGS84 model, with latitude first
+and longitude second.  The results are rounded to the nearest whole metre.
+They can be used with C<format_grid> in the same way as the results from
+C<ll_to_grid>.  
 
 This function is called automatically by C<ll_to_grid> if your
 coordinates are WGS84 and lie outside the OSTN02 polygon.
 
 =head3 C<grid_to_ll_helmert(e,n)>
 
-You can use this function to do a quick conversion from OS grid references to
-WGS84 latitude and longitude coordinates without using the whole OSTN02
-dataset.  The algorithm used is known as a Helmert transformation.  This is the
-usual coordinate conversion implemented in most consumer-level GPS devices.  It
-is based on parameters supplied by the OS; they suggest that in most of the UK
-this conversion is accurate to within about 5m.   
+You can use this function to do a quicker conversion from OS grid references
+to WGS84 latitude and longitude coordinates without using the whole OSTN02
+dataset.  The algorithm used is known as a Helmert transformation.  This is
+the usual coordinate conversion algoirthm implemented in most consumer-level
+GPS devices.  It is based on parameters supplied by the OS; they suggest
+that in most of the UK this conversion is accurate to within about 5m.   
 
     my ($lat, $lon) = grid_to_ll_helmert(538885, 177322);
 
@@ -675,52 +668,39 @@ The results are only reliable close to mainland Britain.
 
 =head1 EXAMPLES
 
-  use strict;
-  use warnings;
   use Geo::Coordinates::OSGB qw/ll_to_grid grid_to_ll/;
-  #
+  
   # Latitude and longitude according to the WGS84 model
-  my ($lat, $lon) = grid_to_ll($e, $n);
+  ($lat, $lon) = grid_to_ll($e, $n);
+  
   # and to go the other way
   ($e, $n) = ll_to_grid($lat,$lon);
-
 
 See the test files for more examples of usage.
 
 =head1 BUGS AND LIMITATIONS
 
-The formulae supplied by the OS and used for the conversion routines are only
-approximations.   So after
+The formulae supplied by the OS and used for the conversion routines are 
+specifically designed to be close floating-point approximations rather 
+than exact mathematical equivalences.  So after round-trips like these:
 
-  ($a1,$b1) = grid_to_ll(ll_to_grid($a,$b));
+  ($lat1,$lon1) = grid_to_ll(ll_to_grid($lat0,$lon0));
+  ($e1,$n1)     = ll_to_grid(grid_to_ll($e0,$n0));
 
-neither C<$a==$a1> nor C<$b==$b1> exactly.  The degree of the error
-depends on where you are and which transformation you are doing.  
+neither C<$lat1 == $lat0> nor C<$lon1 == $lon0> nor C<$e1 == $e0> nor C<$n1 ==
+$n0> exactly.  However the differences should be very small.
 
-For all of England, Wales, and the Isle of Man the error will be tiny.
-Converting from WGS84 latitude and longitude should give you results accurate
-to 1mm in most cases.  Converting the other way is slightly less accurate, but
-any error should be less than 1cm in these areas.
+The OS formulae were designed to give an accuracy of about 1 mm of error.  This
+means that you can rely on the third decimal place for grid references and
+about the seventh or eighth for latitude and longitude (although the OS
+themselves only provide six decimal places in their results).
 
-For mainland Scotland, the Hebrides and Orkney, translating lat/lon to
-grid should be accurate, but the error going from the grid to lat/lon may be as
-much as 11cm in some places.  Shetland is similar until you go north of the
-1,202,000 m grid line.  North of this, if you do the round trip shown above,
-you will get an error of a few mm in easting but somewhere between 10 and 100 m
-of error in northing.  The round trip error in northing increases by about 95cm
-for every kilometre north of 1,202,000.  This is noticeable in testing and
-affects the northern part of Yell and most of Unst.  I have no idea whether
-this is just a geodetic anomaly, or a systematic error in OSTN02, or (quite
-probably) some stupid error in my code.  The same drift north of 1,202,000 is
-noticeable if you do the round trip with the approximate Helmert routines.  Any
-feedback on this issue is very welcome.
-
-All other areas, like Northern Ireland, the Channel Islands or
-Rockall, and any areas of sea more than a couple of miles off shore,
-are outside the coverage of OSTN02, so the simpler, less accurate
-transformation is used.  The OS state that this is accurate to about
-5m but that the parameters used are only valid in the close vicinity
-of the British Isles.
+For all of England, Wales, Scotland, and the Isle of Man the error will be
+tiny.  All other areas, like Northern Ireland, the Channel Islands or Rockall,
+and any areas of sea more than a few miles off shore, are outside the coverage
+of OSTN02, so the simpler, less accurate transformation is used.  The OS state
+that this is accurate to about 5m but that the parameters used are only valid
+in the reasonably close vicinity of the British Isles.
 
 Not enough testing has been done.  I am always grateful for the
 feedback I get from users, but especially for problem reports that
