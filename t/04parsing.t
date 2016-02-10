@@ -2,12 +2,13 @@
 
 # test grid ref parsing 
 
-use Test::More tests=>55;
+use Test::More tests=>58;
 
 use Geo::Coordinates::OSGB::Grid qw(
     parse_grid
 );
 
+is( sprintf("%d %d", parse_grid('TA')),              '500000 400000',   '100km square');                    
 is( sprintf("%d %d", parse_grid('TA15')),            '510000 450000',   '10km square');                    
 is( sprintf("%d %d", parse_grid('TA1256')),          '512000 456000',   '1km square');                     
 is( sprintf("%d %d", parse_grid('TA123567')),        '512300 456700',   '100m square');                    
@@ -21,7 +22,7 @@ is( sprintf("%d %d", parse_grid('TA 12345 67890')),  '512345 467890',   '1m squa
 is( sprintf("%d %d", parse_grid('TA', '123 567')),   '512300 456700',   '2 arg 100m square');              
 is( sprintf("%d %d", parse_grid('TA', '123567')),    '512300 456700',   '2 arg 100m square');              
 is( sprintf("%d %d", parse_grid('TA', 123,567)),     '512300 456700',   '3 arg 100m square');              
-is( sprintf("%d %d", parse_grid('TA', 12345,7, {figs=>5})),     '512345 400007',   '3 arg 100m square');              
+is( sprintf("%d %d", parse_grid('TA', 123,7, {figs=>5})),     '500123 400007',   '3 arg 100m square');              
 is( sprintf("%d %d", parse_grid('TA', '123', '007')),     '512300 400700',   '3 arg 100m square');              
 is( sprintf("%d %d", parse_grid('SV9055710820')),    '90557 10820',     'St Marys lifeboat station');      
 is( sprintf("%d %d", parse_grid('HU','4795841283')),    '447958 1141283',  'Lerwick lifeboat station');       
@@ -31,6 +32,8 @@ is( sprintf("%d %d", parse_grid('A:164/352194')),    '435200 219400',   "Charlbu
 is( sprintf("%d %d", parse_grid('B:OL43E/914701')),  '391400 570100',   "Chesters Bridge");                
 is( sprintf("%d %d", parse_grid(164,513,62)),        '451300 206200',   'Carfax');                         
 
+is( parse_grid('TA'),                '500000 400000',   'scalar context: 100km square');                    
+is( parse_grid('TA',0,0),            '500000 400000',   'scalar context: 100km square');                    
 is( parse_grid('TA15'),              '510000 450000',   'scalar context: 10km square');                    
 is( parse_grid('TA1256'),            '512000 456000',   'scalar context: 1km square');                     
 is( parse_grid('TA123567'),          '512300 456700',   'scalar context: 100m square');                    

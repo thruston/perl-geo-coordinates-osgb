@@ -4,11 +4,12 @@ use strict;
 use warnings;
 use Carp;
 use 5.008; # at least Perl 5.8 please
-use POSIX qw/floor/;
 
 our $VERSION = '2.14';
 our @EXPORT_OK = qw( ll_to_grid grid_to_ll 
                      ll_to_grid_helmert grid_to_ll_helmert
+                     is_grid_in_ostn02
+                     random_ostn_grid
                      set_default_shape)
                     ; 
 
@@ -28,19 +29,28 @@ sub set_default_shape {
     return;
 }
 
-sub _as_radians {
-    my $angle = shift;
-    return $angle / 57.29577951308232087679815481410517;
+sub is_grid_in_ostn02 {
+    my ($e, $n) = @_;
+    return _find_OSTN02_shifts_at($e, $n)
+        && _find_OSTN02_shifts_at($e-5000, $n)
+        && _find_OSTN02_shifts_at($e+5000, $n)
+        && _find_OSTN02_shifts_at($e, $n-5000)
+        && _find_OSTN02_shifts_at($e, $n+5000);
 }
 
-sub _as_degrees {
-    my $angle = shift;
-    return $angle * 57.29577951308232087679815481410517;
+sub random_ostn_grid {
+    my ($e, $n);
+    while (1) {
+        $e = int   700_000 * rand;
+        $n = int 1_230_000 * rand;
+        last if is_grid_in_ostn02($e, $n);
+    }
+    return wantarray ? ($e, $n) : [$e, $n];
 }
 
 # constants for OSGB mercator projection
-use constant ORIGIN_LONGITUDE    => _as_radians(-2);
-use constant ORIGIN_LATITUDE     => _as_radians(49);
+use constant ORIGIN_LONGITUDE    => -2 / 57.29577951308232087679815481410517;
+use constant ORIGIN_LATITUDE     => 49 / 57.29577951308232087679815481410517;
 use constant ORIGIN_EASTING      =>  400_000;
 use constant ORIGIN_NORTHING     => -100_000;
 use constant CONVERGENCE_FACTOR  => 0.9996012717;
@@ -65,8 +75,12 @@ sub _llh_to_cartesian {
 
     my ($a, $b, $f, $ee) = @{$ellipsoid_shapes{$shape}};
 
-    my $phi = _as_radians($lat);  my $sp = sin $phi; my $cp = cos $phi;
-    my $lam = _as_radians($lon);  my $sl = sin $lam; my $cl = cos $lam;
+    my $phi = $lat / 57.29577951308232087679815481410517;
+    my $sp = sin $phi; 
+    my $cp = cos $phi;
+    my $lam = $lon / 57.29577951308232087679815481410517;
+    my $sl = sin $lam; 
+    my $cl = cos $lam;
 
     my $nu = $a / sqrt(1 - $ee*$sp*$sp);
 
@@ -95,8 +109,8 @@ sub _cartesian_to_llh {
         last if abs($oldphi-$phi) < 1E-12;
     }        
      
-    my $lat = _as_degrees($phi);
-    my $lon = _as_degrees($lam);
+    my $lat = $phi * 57.29577951308232087679815481410517;
+    my $lon = $lam * 57.29577951308232087679815481410517;
     my $H = $p/cos($phi) - $nu;
     return ($lat, $lon, $H);
 
@@ -108,9 +122,9 @@ sub _small_Helmert_transform_for_OSGB {
     my $ty = $direction * +125.157;
     my $tz = $direction * -542.060;
     my $sp = $direction * 0.0000204894 + 1;
-    my $rx = _as_radians($direction * -0.1502/3600);
-    my $ry = _as_radians($direction * -0.2470/3600);
-    my $rz = _as_radians($direction * -0.8421/3600);
+    my $rx = ($direction * -0.1502/3600) / 57.29577951308232087679815481410517;
+    my $ry = ($direction * -0.2470/3600) / 57.29577951308232087679815481410517;
+    my $rz = ($direction * -0.8421/3600) / 57.29577951308232087679815481410517;
     my $xb = $tx + $sp*$xa - $rz*$ya + $ry*$za;
     my $yb = $ty + $rz*$xa + $sp*$ya - $rx*$za;
     my $zb = $tz - $ry*$xa + $rx*$ya + $sp*$za;
@@ -153,17 +167,19 @@ sub ll_to_grid {
     croak "Unknown shape: $shape" if !exists $ellipsoid_shapes{$shape};
 
     my ($e,$n) = _project_onto_grid($lat, $lon, $shape);
+    
+    my @out;
 
     # We are done if we were using LL from OS maps
     if ($shape eq 'OSGB36') {
-        my @out = map { sprintf '%.3f', $_ } ($e, $n);
+        @out = map { sprintf '%.3f', $_ } ($e, $n);
         return wantarray ? @out : "@out";
     }
 
     # now shape is WGS84 etc so we must adjust
     my ($dx, $dy) = _find_OSTN02_shifts_at($e,$n);
     if ($dx) {
-        my @out = map { sprintf '%.3f', $_ } ($e + $dx, $n + $dy);
+        @out = map { sprintf '%.3f', $_ } ($e + $dx, $n + $dy);
         return wantarray ? @out : "@out";
     }
 
@@ -186,9 +202,10 @@ sub _project_onto_grid {
     my ($a,$b,$f,$e2) = @{$ellipsoid_shapes{$shape}};
 
     my $n = ($a-$b)/($a+$b);
+    my $af = $a * CONVERGENCE_FACTOR;
 
-    my $phi = _as_radians($lat);
-    my $lam = _as_radians($lon);
+    my $phi = $lat / 57.29577951308232087679815481410517;
+    my $lam = $lon / 57.29577951308232087679815481410517;
 
     my $cp = cos $phi; my $sp = sin $phi; 
     my $sp2 = $sp*$sp;
@@ -196,11 +213,20 @@ sub _project_onto_grid {
     my $tp2 = $tp*$tp; 
     my $tp4 = $tp2*$tp2;
 
-    my $nu   = $a * CONVERGENCE_FACTOR * (1 - $e2 * $sp2 ) ** -0.5;
-    my $rho  = $a * CONVERGENCE_FACTOR * (1 - $e2) * (1 - $e2 * $sp2 ) ** -1.5;
+    my $splat = 1 - $e2 * $sp2; 
+    my $sqrtsplat = sqrt($splat);
+    my $nu  = $af / $sqrtsplat;
+    my $rho = $af * (1 - $e2) / ($splat*$sqrtsplat);
     my $eta2 = $nu/$rho - 1;
 
-    my $M = _compute_big_m($phi, $b, $n);
+    my $p_plus  = $phi + ORIGIN_LATITUDE;
+    my $p_minus = $phi - ORIGIN_LATITUDE;
+    my $M = $b * CONVERGENCE_FACTOR * (
+           (1 + $n * (1 + 5/4*$n*(1 + $n)))*$p_minus
+         - 3*$n*(1+$n*(1+7/8*$n))  * sin(  $p_minus) * cos(  $p_plus)
+         + (15/8*$n * ($n*(1+$n))) * sin(2*$p_minus) * cos(2*$p_plus)
+         - 35/24*$n**3             * sin(3*$p_minus) * cos(3*$p_plus)
+           );
 
     my $I    = $M + ORIGIN_NORTHING;
     my $II   = $nu/2  * $sp * $cp;
@@ -222,10 +248,12 @@ sub _find_OSTN02_shifts_at {
 
     my ($x, $y) = @_;
 
-    my $e_index = floor $x/1000;
-    my $n_index = floor $y/1000;
+    return if $x < 0;
+    return if $y < 0;
 
-    return if $n_index   < 0;
+    my $e_index = int $x/1000;
+    my $n_index = int $y/1000;
+
     return if $n_index+1 > $#ostn_data;
 
     my $lo_pair_ref = _get_ostn_pair_reference($e_index, $n_index)   or return;
@@ -234,14 +262,8 @@ sub _find_OSTN02_shifts_at {
     my ($se0,$sn0,$se1,$sn1) = @$lo_pair_ref;
     my ($se2,$sn2,$se3,$sn3) = @$hi_pair_ref;
 
-    my $x0 = int($e_index . '000');
-    my $y0 = int($n_index . '000');
-
-    my $dx = $x - $x0; # offset within square
-    my $dy = $y - $y0;
-
-    my $t = $dx/1000;
-    my $u = $dy/1000;
+    my $t = $x/1000 - $e_index; # offset within square
+    my $u = $y/1000 - $n_index;
 
     my $f0 = (1-$t)*(1-$u);
     my $f1 =    $t *(1-$u);
@@ -263,7 +285,7 @@ sub _get_ostn_pair_reference {
         return $ostn_shifts_for{$k}
     }
 
-    my $leading_zeros = int substr $ostn_data[$y], 0, 3;
+    my $leading_zeros = substr $ostn_data[$y], 0, 3;
 
     return if $x < $leading_zeros;
 
@@ -354,12 +376,18 @@ sub _reverse_project_onto_ellipsoid {
     my $dn = $northing - ORIGIN_NORTHING;
     my $de = $easting - ORIGIN_EASTING;
     
-    my ($phi, $lam);
+    my ($phi, $lam, $M, $p_plus, $p_minus);
     $phi = ORIGIN_LATITUDE + $dn/$af;
 
-    my $M;
     while (1) {
-        $M = _compute_big_m($phi, $b, $n);
+        $p_plus  = $phi + ORIGIN_LATITUDE;
+        $p_minus = $phi - ORIGIN_LATITUDE;
+        $M = $b * CONVERGENCE_FACTOR * (
+               (1 + $n * (1 + 5/4*$n*(1 + $n)))*$p_minus
+             - 3*$n*(1+$n*(1+7/8*$n))  * sin(  $p_minus) * cos(  $p_plus)
+             + (15/8*$n * ($n*(1+$n))) * sin(2*$p_minus) * cos(2*$p_plus)
+             - 35/24*$n**3             * sin(3*$p_minus) * cos(3*$p_plus)
+               );
         last if abs($dn-$M) < HUNDREDTH_MM;
         $phi = $phi + ($dn-$M)/$af;
     }
@@ -369,16 +397,19 @@ sub _reverse_project_onto_ellipsoid {
     my $tp  = $sp/$cp; # cos phi cannot be zero in GB
     my $tp2 = $tp*$tp; 
     my $tp4 = $tp2*$tp2;
+    my $tp6 = $tp4*$tp2 ;
 
-    my $nu   = $af / sqrt(1-$e2*$sp2);
-    my $rho  = $af * (1 - $e2) * (1 - $e2 * $sp2 ) ** -1.5;
+    my $splat = 1 - $e2 * $sp2; 
+    my $sqrtsplat = sqrt($splat);
+    my $nu  = $af / $sqrtsplat;
+    my $rho = $af * (1 - $e2) / ($splat*$sqrtsplat);
     my $eta2 = $nu/$rho - 1;
 
     my $VII  = $tp /   (2*$rho*$nu);
     my $VIII = $tp /  (24*$rho*$nu**3) *  (5 +  3*$tp2 + $eta2 - 9*$tp2*$eta2);
     my $IX   = $tp / (720*$rho*$nu**5) * (61 + 90*$tp2 + 45*$tp4);
 
-    my $secp = 1/$cp; my $tp6 = $tp4*$tp2 ;
+    my $secp = 1/$cp; 
 
     my $X    = $secp/$nu;
     my $XI   = $secp/(   6*$nu**3)*($nu/$rho + 2*$tp2);
@@ -386,45 +417,32 @@ sub _reverse_project_onto_ellipsoid {
     my $XIIA = $secp/(5040*$nu**7)*(    61 + 662*$tp2 + 1320*$tp4 + 720*$tp6);
 
     $phi = $phi 
-         - $VII *$de*$de 
+         - $VII *$de*$de
          + $VIII*$de*$de*$de*$de 
          - $IX  *$de*$de*$de*$de*$de*$de;
 
     $lam = ORIGIN_LONGITUDE 
          + $X   *$de 
          - $XI  *$de*$de*$de 
-         + $XII *$de*$de*$de*$de*$de 
+         + $XII *$de*$de*$de*$de*$de
          - $XIIA*$de*$de*$de*$de*$de*$de*$de;
 
     # now put into degrees & return
-    return map { _as_degrees($_) } ($phi, $lam);
-}
-
-sub _compute_big_m {
-    my ($phi, $b, $n) = @_;
-    my $p_plus  = $phi + ORIGIN_LATITUDE;
-    my $p_minus = $phi - ORIGIN_LATITUDE;
-    return $b * CONVERGENCE_FACTOR * (
-           (1 + $n * (1 + 5/4*$n*(1 + $n)))*$p_minus
-         - 3*$n*(1+$n*(1+7/8*$n))  * sin(  $p_minus) * cos(  $p_plus)
-         + (15/8*$n * ($n*(1+$n))) * sin(2*$p_minus) * cos(2*$p_plus)
-         - 35/24*$n**3             * sin(3*$p_minus) * cos(3*$p_plus)
-           );
+    return ($phi * 57.29577951308232087679815481410517,
+            $lam * 57.29577951308232087679815481410517);
 }
 
 1;
 
 =pod
 
-=encoding utf8
-
 =head1 NAME
 
 Geo::Coordinates::OSGB - Convert coordinates between Lat/Lon and the British National Grid
 
 An implementation of co-ordinate conversion for England, Wales, and
-Scotland based on formulae and data published by the Ordnance Survey
-of Great Britain.
+Scotland based on formulae and data published by the Ordnance Survey of
+Great Britain.
 
 =head1 VERSION
 
@@ -439,29 +457,30 @@ Examine $Geo::Coordinates::OSGB::VERSION for details.
 
 =head1 DESCRIPTION
 
-These modules convert accurately between an OSGB national grid reference and
-coordinates given in latitude and longitude.  
+These modules convert accurately between an OSGB national grid reference
+and coordinates given in latitude and longitude.  
 
-In Version 2.10 and above, the default ellipsoid model used is the de facto
-international standard WGS84.  This means that you can take latitude and
-longitude readings from your GPS receiver, or read them from Wikipedia, or
-Google Earth, or your car's sat nav, and use this module to convert them to
-accurate British National grid references for use with one of the Ordnance
-Survey's paper maps.  And vice versa, of course.
+In Version 2.10 and above, the default ellipsoid model used is the I<de
+facto> international standard WGS84.  This means that you can take
+latitude and longitude readings from your GPS receiver, or read them
+from Wikipedia, or Google Earth, or your car's sat-nav, and use this
+module to convert them to accurate British National grid references for
+use with one of the Ordnance Survey's paper maps.  And I<vice versa>, of
+course.
 
-The module is implemented purely in Perl, and should run on any 
-platform with Perl version 5.8 or better. 
+The module is implemented purely in Perl, and should run on any platform
+with Perl version 5.8 or better. 
 
 In this description, the abbreviations `OS' and `OSGB' mean `the
-Ordnance Survey of Great Britain': the British government agency
-that produces the standard maps of England, Wales, and Scotland.
-Any mention of `sheets' or `maps' refers to one or more of the map
-sheets defined in the accompanying maps module.
+Ordnance Survey of Great Britain': the British government agency that
+produces the standard maps of England, Wales, and Scotland.  Any mention
+of `sheets' or `maps' refers to one or more of the map sheets defined in
+the accompanying maps module.
 
-This code is fine tuned to the British national grid system.  It is
-of no use outside Britain.  In fact it's only really useful in the
-areas covered by the OS's main series of maps, which excludes the
-Channel Islands and Northern Ireland.
+This code is fine tuned to the British national grid system.  It is of
+no use outside Britain.  In fact it's only really useful in the areas
+covered by the OS's main series of maps, which excludes the Channel
+Islands and Northern Ireland.
 
 =head1 SUBROUTINES/METHODS
 
@@ -476,12 +495,12 @@ Neither of these is exported by default.
 
 =head3 C<ll_to_grid(lat,lon)>
 
-C<ll_to_grid> translates a latitude and longitude pair into 
-a grid easting and northing pair.
+C<ll_to_grid> translates a latitude and longitude pair into a grid
+easting and northing pair.
 
-When called in a list context, C<ll_to_grid> returns the easting and northing
-as a list of two.  When called in a scalar context, it returns a single string
-with the numbers separated by spaces.
+When called in a list context, C<ll_to_grid> returns the easting and
+northing as a list of two.  When called in a scalar context, it returns
+a single string with the numbers separated by spaces.
 
 The arguments should be supplied as real numbers representing
 decimal degrees, like this
@@ -491,8 +510,8 @@ decimal degrees, like this
 Following the normal convention, positive arguments mean North or
 East, negative South or West.  
 
-If you have data with degrees, minutes and seconds, you can convert them to
-decimals like this:
+If you have data with degrees, minutes and seconds, you can convert them
+to decimals like this:
 
     my ($e,$n) = ll_to_grid(51+25/60, 0-5/60-2/3600);
 
@@ -500,92 +519,89 @@ If you have trouble remembering the order of the arguments, or the
 returned values, note that latitude comes before longitude in the
 alphabet too, as easting comes before northing.  
 
-However since reasonable latitudes for the OSGB are in the range 49 to 61, and
-reasonable longitudes in the range -9 to +2, C<ll_to_grid> accepts argument in
-either order.  If your longitude is larger than your latitude, then the values
-of the arguments will be silently swapped.  
+However since reasonable latitudes for the OSGB are in the range 49 to
+61, and reasonable longitudes in the range -9 to +2, C<ll_to_grid>
+accepts argument in either order.  If your longitude is larger than your
+latitude, then the values of the arguments will be silently swapped.  
 
-You can also supply the arguments as named keywords (but be sure to use the
-curly braces so that you pass them as a reference):
+You can also supply the arguments as named keywords (but be sure to use
+the curly braces so that you pass them as a reference):
 
     my ($e,$n) = ll_to_grid( { lat => 51.5, lon => 2.1 } );
 
-The easting and northing will be returned as the distance in metres
-from the `false point of origin' of the British Grid (which is a
-point some way to the south-west of the Scilly Isles).  
+The easting and northing will be returned as the distance in metres from
+the `false point of origin' of the British Grid (which is a point some
+way to the south-west of the Scilly Isles).  
 
     my ($e,$n) = ll_to_grid(51.5, -2.1); # (393154.801, 177900.605)
     my $s      = ll_to_grid(51.5, -2.1); # "393154.801 177900.605"
 
-If the coordinates you supply are in the area covered by the 
-OSTN02 transformation data, then the results will be rounded to 3
-decimal places, which corresponds to the nearest millimetre.  If
-they are outside the coverage (which normally means more than a few
-km off shore) then the conversion is automagically done using a
-Helmert transformation instead of the OSTN02 data.  The results will
-be rounded to the nearest metre in this case, although you probably
-should not rely on the results being more accurate than about 5m.
+If the coordinates you supply are in the area covered by the OSTN02
+transformation data, then the results will be rounded to 3 decimal
+places, which corresponds to the nearest millimetre.  If they are
+outside the coverage (which normally means more than a few km off shore)
+then the conversion is automagically done using a Helmert transformation
+instead of the OSTN02 data.  The results will be rounded to the nearest
+metre in this case, although you probably should not rely on the results
+being more accurate than about 5m.
 
    # A point in the sea, to the north-west of Coll
    my $s = ll_to_grid(56.75,-7); # returns "94471 773206" 
 
-The numbers returned may be negative if your latitude and longitude
-are far enough south and west, but beware that the transformation is
-less and less accurate or useful the further you get from the British Isles.
+The numbers returned may be negative if your latitude and longitude are
+far enough south and west, but beware that the transformation is less
+and less accurate or useful the further you get from the British Isles.
 
-If you want the result presented in a more traditional grid
-reference format you should pass the results to one of the grid
-formatting routines from L<Grid.pm|Geo::Coordinates::OSGB::Grid>.
-Like this.
+If you want the result presented in a more traditional grid reference
+format you should pass the results to one of the grid formatting
+routines from L<Grid.pm|Geo::Coordinates::OSGB::Grid>.  Like this.
 
     $gridref = format_grid(ll_to_grid(51.5,-0.0833)); 
     $gridref = format_grid_GPS(ll_to_grid(51.5,-0.0833)); 
     $gridref = format_grid_map(ll_to_grid(51.5,-0.0833));
 
-C<ll_to_grid()> also takes an optional argument that sets the
-ellipsoid model to use.  This defaults to `WGS84', the name of the
-normal model for working with normal GPS coordinates, but if you
-want to work with the traditional latitude and longitude values
-printed on OS maps then you should add an optional shape parameter
-like this:
+C<ll_to_grid()> also takes an optional argument that sets the ellipsoid
+model to use.  This defaults to `WGS84', the name of the normal model
+for working with normal GPS coordinates, but if you want to work with
+the traditional latitude and longitude values printed on OS maps then
+you should add an optional shape parameter like this:
 
     my ($e, $n) = ll_to_grid(49,-2, {shape => 'OSGB36'});
 
 Incidentally, if you make this call above you will get back
-(400000,-100000) which are the coordinates of the `true point of
-origin' of the British grid.  You should get back an easting of
-400000 for any point with longtitude 2W since this is the central
-meridian used for the OSGB projection.  However you will get a
-slightly different value unless you specify C<< {shape => 'OSGB36'} >>
-since the WGS84 meridians are not quite the same as OSGB36.
+(400000,-100000) which are the coordinates of the `true point of origin'
+of the British grid.  You should get back an easting of 400000 for any
+point with longitude 2W since this is the central meridian used for the
+OSGB projection.  However you will get a slightly different value unless
+you specify C<< {shape => 'OSGB36'} >> since the WGS84 meridians are not
+quite the same as OSGB36.
 
 =head3 C<grid_to_ll(e,n)>
 
 The routine C<grid_to_ll()> takes an easting and northing pair
-representing the distance in metres from the `false point of origin'
-of the OSGB grid and returns a pair of real numbers representing the
+representing the distance in metres from the `false point of origin' of
+the OSGB grid and returns a pair of real numbers representing the
 equivalent longitude and latitude coordinates in the WGS84 model.  
 
-Following convention, positive results are North of the equator and
-East of the prime meridian, negative numbers are South and West.
-The fractional parts of the results represent decimal fractions of
-degrees. 
+Following convention, positive results are North of the equator and East
+of the prime meridian, negative numbers are South and West.  The
+fractional parts of the results represent decimal fractions of degrees. 
 
 No special processing is done in scalar context because there is no
-obvious assumption about how to round the results.  You will just
-get the length of the list returned, which is 2.
+obvious assumption about how to round the results.  You will just get
+the length of the list returned, which is 2.
 
 The arguments must be an (easting, northing) pair representing the
-absolute grid reference in metres from the point of origin.  You can
-get these from a traditional grid reference string by calling
+absolute grid reference in metres from the point of origin.  You can get
+these from a traditional grid reference string by calling
 C<parse_grid()> first.
 
     my ($lat, $lon) = grid_to_ll(parse_grid('SM 349 231'))
 
-An optional last argument defines the ellipsoid model to use just as
-it does for C<ll_to_grid()>.  This is only necessary is you are
-working with an ellipsoid model other than WGS84.  
-Pass the argument as a hash ref with a `shape' key.
+An optional last argument defines the ellipsoid model to use just as it
+does for C<ll_to_grid()>.  This is only necessary is you are working
+with an ellipsoid model other than WGS84.  Pass the argument as a hash
+ref with a `shape' key.
 
     my ($lat, $lon) = grid_to_ll(400000, 300000, {shape => 'OSGB36'});
 
@@ -594,16 +610,17 @@ of them (this is strictly optional):
 
     my ($lat, $lon) = grid_to_ll({ e => 400000, n => 300000, shape => 'OSGB36'});
 
-The results returned will be floating point numbers with the default Perl
-precision.  Unless you are running with long double precision floats you
-will get 13 decimal places for latitude and 14 places for longitude;  but
-this does not mean that the calculations are accurate to that many places.
-The OS online conversion tools return decimal degrees to only 6 places.  A
-difference of 1 in the sixth decimal place represents a distance on the
-ground of about 10 cm.  This is probably a good rule of thumb for the
-reliability of these calculations, but all the available decimal places are
-returned so that you can choose the rounding that is appropriate for your
-application.  Here's one way to do that:
+The results returned will be floating point numbers with the default
+Perl precision.  Unless you are running with long double precision
+floats you will get 13 decimal places for latitude and 14 places for
+longitude;  but this does not mean that the calculations are accurate to
+that many places.  The OS online conversion tools return decimal degrees
+to only 6 places.  A difference of 1 in the sixth decimal place
+represents a distance on the ground of about 10 cm.  This is probably a
+good rule of thumb for the reliability of these calculations, but all
+the available decimal places are returned so that you can choose the
+rounding that is appropriate for your application.  Here's one way to do
+that:
 
     my ($lat, $lon) = map { sprintf "%.6f", $_ } grid_to_ll(431234, 312653);
 
@@ -613,58 +630,61 @@ application.  Here's one way to do that:
 =head3 C<set_default_shape(shape)>
 
 The default ellipsoid shape used for conversion to and from latitude and
-longitude is `WGS84' as used in the international GPS system.  This default
-it set every time that  you load the module.  If you want to process or
-produce a large number latitude and longitude coordinates in the British
-Ordnance Survey system (as printed round the edges of OS Landranger maps).
-you can use C<< set_default_shape('OSGB36'); >> to set the default shape to
-OSGB36.  This saves you having to add C<< { shape => 'OSGB36' } >> to
-every call of C<ll_to_grid> or C<grid_to_ll>.
+longitude is `WGS84' as used in the international GPS system.  This
+default it set every time that  you load the module.  If you want to
+process or produce a large number latitude and longitude coordinates in
+the British Ordnance Survey system (as printed round the edges of OS
+Landranger maps).  you can use C<< set_default_shape('OSGB36'); >> to
+set the default shape to OSGB36.  This saves you having to add C<< {
+shape => 'OSGB36' } >> to every call of C<ll_to_grid> or C<grid_to_ll>.
 
 You can use C<< set_default_shape('WGS84'); >> to set the default shape back
 to WGS84 again when finished with OSGB36 coordinates.
 
 =head3 C<ll_to_grid_helmert(lat, lon)>
 
-You can use this function to do a quicker conversion from WGS84 lat/lon to
-the OS grid without using the whole OSTN02 dataset.  The algorithm used is
-known as a Helmert transformation.  This is the usual coordinate conversion
-algorithm implemented in most consumer-level GPS devices.  It is based on
-parameters supplied by the OS; they suggest that in most of the UK this
-conversion is accurate to within about 5m.   
+You can use this function to do a quicker conversion from WGS84 lat/lon
+to the OS grid without using the whole OSTN02 data set.  The algorithm
+used is known as a Helmert transformation.  This is the usual coordinate
+conversion algorithm implemented in most consumer-level GPS devices.  It
+is based on parameters supplied by the OS; they suggest that in most of
+the UK this conversion is accurate to within about 5m.   
 
     my ($e, $n) = ll_to_grid_helmert(51.477811, -0.001475);  # RO Greenwich
 
-The input must be decimal degrees in the WGS84 model, with latitude first
-and longitude second.  The results are rounded to the nearest whole metre.
-They can be used with C<format_grid> in the same way as the results from
-C<ll_to_grid>.  
+The input must be decimal degrees in the WGS84 model, with latitude
+first and longitude second.  The results are rounded to the nearest
+whole metre.  They can be used with C<format_grid> in the same way as
+the results from C<ll_to_grid>.  
 
 This function is called automatically by C<ll_to_grid> if your
 coordinates are WGS84 and lie outside the OSTN02 polygon.
 
 =head3 C<grid_to_ll_helmert(e,n)>
 
-You can use this function to do a quicker conversion from OS grid references
-to WGS84 latitude and longitude coordinates without using the whole OSTN02
-dataset.  The algorithm used is known as a Helmert transformation.  This is
-the usual coordinate conversion algoirthm implemented in most consumer-level
-GPS devices.  It is based on parameters supplied by the OS; they suggest
-that in most of the UK this conversion is accurate to within about 5m.   
+You can use this function to do a quicker conversion from OS grid
+references to WGS84 latitude and longitude coordinates without using the
+whole OSTN02 data set.  The algorithm used is known as a Helmert
+transformation.  This is the usual coordinate conversion algorithm
+implemented in most consumer-level GPS devices.  It is based on
+parameters supplied by the OS; they suggest that in most of the UK this
+conversion is accurate to within about 5m.   
 
     my ($lat, $lon) = grid_to_ll_helmert(538885, 177322);
 
-The input must be in metres from false point of origin (as produced by C<parse_grid>)
-and the results are in decimal degrees using the WGS84 model.
+The input must be in metres from false point of origin (as produced by
+C<parse_grid>) and the results are in decimal degrees using the WGS84
+model.
 
 The results are returned with the full Perl precision in the same way as
-C<grid_to_ll> so that you can choose an appropriate rounding for your needs.
-Four or five decimal places is probably appropriate in most cases.  This
-represents somewhere between 1 and 10 m on the ground.
+C<grid_to_ll> so that you can choose an appropriate rounding for your
+needs.  Four or five decimal places is probably appropriate in most
+cases.  This represents somewhere between 1 and 10 m on the ground.
 
-This function is called automatically by C<grid_to_ll> if the grid reference
-you supply lies outside the OSTN02 polygon.  (Generally such spots are in the sea).
-The results are only reliable close to mainland Britain.
+This function is called automatically by C<grid_to_ll> if the grid
+reference you supply lies outside the OSTN02 polygon.  (Generally such
+spots are in the sea).  The results are only reliable close to mainland
+Britain.
 
 =head1 EXAMPLES
 
@@ -680,44 +700,47 @@ See the test files for more examples of usage.
 
 =head1 BUGS AND LIMITATIONS
 
-The formulae supplied by the OS and used for the conversion routines are 
-specifically designed to be close floating-point approximations rather 
+The formulae supplied by the OS and used for the conversion routines are
+specifically designed to be close floating-point approximations rather
 than exact mathematical equivalences.  So after round-trips like these:
 
   ($lat1,$lon1) = grid_to_ll(ll_to_grid($lat0,$lon0));
   ($e1,$n1)     = ll_to_grid(grid_to_ll($e0,$n0));
 
-neither C<$lat1 == $lat0> nor C<$lon1 == $lon0> nor C<$e1 == $e0> nor C<$n1 ==
-$n0> exactly.  However the differences should be very small.
+neither C<$lat1 == $lat0> nor C<$lon1 == $lon0> nor C<$e1 == $e0> nor
+C<$n1 == $n0> exactly.  However the differences should be very small.
 
-The OS formulae were designed to give an accuracy of about 1 mm of error.  This
-means that you can rely on the third decimal place for grid references and
-about the seventh or eighth for latitude and longitude (although the OS
-themselves only provide six decimal places in their results).
+The OS formulae were designed to give an accuracy of about 1 mm of
+error.  This means that you can rely on the third decimal place for grid
+references and about the seventh or eighth for latitude and longitude
+(although the OS themselves only provide six decimal places in their
+results).
 
-For all of England, Wales, Scotland, and the Isle of Man the error will be
-tiny.  All other areas, like Northern Ireland, the Channel Islands or Rockall,
-and any areas of sea more than a few miles off shore, are outside the coverage
-of OSTN02, so the simpler, less accurate transformation is used.  The OS state
-that this is accurate to about 5m but that the parameters used are only valid
-in the reasonably close vicinity of the British Isles.
+For all of England, Wales, Scotland, and the Isle of Man the error will
+be tiny.  All other areas, like Northern Ireland, the Channel Islands or
+Rockall, and any areas of sea more than a few miles off shore, are
+outside the coverage of OSTN02, so the simpler, less accurate
+transformation is used.  The OS state that this is accurate to about 5m
+but that the parameters used are only valid in the reasonably close
+vicinity of the British Isles.
 
-Not enough testing has been done.  I am always grateful for the
-feedback I get from users, but especially for problem reports that
-help me to make this a better module.
+Not enough testing has been done.  I am always grateful for the feedback
+I get from users, but especially for problem reports that help me to
+make this a better module.
 
 =head1 DIAGNOSTICS
 
-The only error message you will get from this module is about the ellipsoid
-shape used for the transformation.  If you try to set C<< {shape => 'blah'} >>
-the module will croak with a message saying C<Unknown shape: blah>.
-The shape should be one of the shapes defined: WGS84 or OSGB36.
+The only error message you will get from this module is about the
+ellipsoid shape used for the transformation.  If you try to set C<<
+{shape => 'blah'} >> the module will croak with a message saying
+C<Unknown shape: blah>.  The shape should be one of the shapes defined:
+WGS84 or OSGB36.
 
-Should this software not do what you expect, then please first read
-this documentation, secondly verify that you have installed it
-correctly and that it passes all the installation tests on your set
-up, thirdly study the source code to see what it's supposed to be
-doing, fourthly get in touch to ask me about it.
+Should this software not do what you expect, then please first read this
+documentation, secondly verify that you have installed it correctly and
+that it passes all the installation tests on your set up, thirdly study
+the source code to see what it's supposed to be doing, fourthly get in
+touch to ask me about it.
 
 =head1 CONFIGURATION AND ENVIRONMENT
 
@@ -727,7 +750,7 @@ platform.
 
 =head1 DEPENDENCIES
 
-None.
+Perl 5.08 or better.
 
 =head1 INCOMPATIBILITIES
 
@@ -737,24 +760,22 @@ None known.
 
 Copyright (C) 2002-2016 Toby Thurston
 
-OSTN02 transformation data included in this module is freely
-available from the Ordnance Survey but remains Crown Copyright (C)
-2002
+OSTN02 transformation data included in this module is freely available
+from the Ordnance Survey but remains Crown Copyright (C) 2002
 
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 2 of the License, or (at your
+option) any later version.
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-02110-1301 USA.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 =head1 AUTHOR
 

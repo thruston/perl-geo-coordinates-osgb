@@ -1161,7 +1161,7 @@ This module exports no functions, but just two hashes of data.
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
 
-Currently (V2.13) we have
+Currently (V2.14) we have
 
   A => 'OS Landranger', 
   B => 'OS Explorer',

@@ -117,7 +117,7 @@ if ( $want_filter ) {
     print "$e $n\n";
 }
 else {
-    printf "Your input: %g %g\n", $lat, $lon;
+    printf "Your input: %s %s\n", $lat, $lon;
     printf "In  WGS84 is %s %s == %s\n", $e, $n, scalar format_grid_landranger($e, $n);
     ($e, $n) = ll_to_grid($lat, $lon, {shape => 'OSGB36'});
     printf "In OSGB36 is %s %s == %s\n", $e, $n, scalar format_grid_landranger($e, $n);

@@ -1,13 +1,20 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
-2.14 March 2016
+2.14 February 2016
 
     - Found and fixed a bug the core ellipsoid projection routine that was causing 
-      the unexpectedly inaccurate results in higher latitudes
+      the unexpectedly inaccurate results in higher latitudes. 
 
-    - Further performance improvements to OSTN02 data look up
+    - Extensive performance improvements to OSTN02 data look up
 
-    - Fixed various typos in Pod sections in all modules
+    - random_grid function now checks that the random grid position
+      it selects is well inside the OSTN02 boundary
+
+    - parse_grid function will now parse a grid square name.  For example
+      "parse_grid('TA')" will return (500000,400000).
+
+    - Fixed various typos in Pod sections in all modules, and added more
+      explanations in Background.pod
 
 2.13 February 2016
 

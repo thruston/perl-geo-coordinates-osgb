@@ -85,6 +85,7 @@ for my $k ( sort keys %test_input ) {
     my $lon_error = abs($lon-$got_lon);
 
     is($got_grid, $given_grid, "ll_to_grid for Station $k" );
+    # the error limits here allow for St Kilda at 8.6W
     ok($lat_error <= 4e-8, sprintf "Lat for %s %.9g %.10g", $k, $lat, $lat_error);
     ok($lon_error <= 5e-8, sprintf "Lon for %s %.9g %.10g", $k, $lon, $lon_error); 
 }
@@ -116,7 +117,7 @@ my $given_ll;
 my $got_ll;
 
 for my $t (@test_data) {
-    $given_ll = sprintf "%s %s", @{$t->{gps}};
+    $given_ll = sprintf "%s %s", @{$t->{gps}}[0,1];
     $got_ll   = sprintf "%.6f %.6f", grid_to_ll(@{$t->{grid}});
    
     is($got_ll, $given_ll, sprintf "grid_to_ll for %s %s", @{$t->{grid}});
