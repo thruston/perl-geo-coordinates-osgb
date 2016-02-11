@@ -6,7 +6,7 @@ Geo::Coordinates::OSGB::Background - Background and extended description
 
 =head1 VERSION
 
-V2.14
+2.15
 
 =head1 DESCRIPTION
 

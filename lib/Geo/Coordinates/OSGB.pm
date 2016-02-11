@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008; # at least Perl 5.8 please
 
-our $VERSION = '2.14';
+our $VERSION = '2.15';
 our @EXPORT_OK = qw( ll_to_grid grid_to_ll 
                      ll_to_grid_helmert grid_to_ll_helmert
                      is_grid_in_ostn02

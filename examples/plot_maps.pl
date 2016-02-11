@@ -13,7 +13,7 @@ use Pod::Usage;
 use File::Temp;
 use Carp;
 
-my $version = '2.14';
+our $VERSION = '2.15';
 
 =pod
 
@@ -25,10 +25,6 @@ This programme shows off several features of L<Geo::Coordinates::OSGB>.
 If you have a working TeXLive installation with GhostScript installed,
 you can use it to produce PDF index maps of the various map series
 provided by L<Geo::Coordinates::OSGB::Maps>.
-
-=head1 VERSION
-
-2.14
 
 =head1 SYNOPSIS
 
@@ -206,7 +202,7 @@ my $options_ok = GetOptions(
     'outfile=s'   => \$pdf_filename,
     'coastfile=s' => \$coast_shapes,
     
-    'version'     => sub { warn "$0, version: $version\n"; exit 0; }, 
+    'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
     'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
     'help'        => sub { pod2usage(-verbose => 1, -exitstatus => 0) },                         
     'man'         => sub { pod2usage(-verbose => 2, -exitstatus => 0) },

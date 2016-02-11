@@ -13,7 +13,7 @@ use Browser::Open qw(open_browser);
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = '2.14';
+our $VERSION = '2.15';
 
 sub format_grid_streetmap {
     my $e = shift;
@@ -29,7 +29,7 @@ sub format_ll_googlemaps {
 
 my $options_ok = GetOptions(
     
-    'version'     => sub { warn "$0, version: $version\n"; exit 0; }, 
+    'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
     'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
     'help'        => sub { pod2usage(-verbose => 1, -exitstatus => 0) },                         
     'man'         => sub { pod2usage(-verbose => 2, -exitstatus => 0) },
@@ -50,10 +50,6 @@ open_browser(format_grid_streetmap($e, $n));
 gbguessr.pl -- compare a random spot in the UK on Streetmap and Googlemaps
 
 This programme shows off some features of L<Geo::Coordinates::OSGB>.
-
-=head1 VERSION
-
-2.14
 
 =head1 SYNOPSIS
 

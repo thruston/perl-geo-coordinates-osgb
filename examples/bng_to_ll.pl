@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid_landranger/;
 use Getopt::Long;
 use Pod::Usage;
 
-my $version = '2.14';
+our $VERSION = '2.15';
 
 =pod
 
@@ -21,10 +21,6 @@ my $version = '2.14';
 bng_to_ll - parse a grid reference and show it as Latitude and Longitude
 
 This programme shows off some features of L<Geo::Coordinates::OSGB>.
-
-=head1 VERSION
-
-2.14
 
 =head1 SYNOPSIS
 
@@ -94,7 +90,7 @@ my $options_ok = GetOptions(
     'filter!'     => \$want_filter, 
     'test!'       => \$test_me,
     
-    'version'     => sub { warn "$0, version: $version\n"; exit 0; }, 
+    'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
     'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
     'help'        => sub { pod2usage(-verbose => 1, -exitstatus => 0) },                         
     'man'         => sub { pod2usage(-verbose => 2, -exitstatus => 0) },
