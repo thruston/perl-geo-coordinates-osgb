@@ -386,9 +386,9 @@ grid is St Kilda (at about 8.57W) and here the round trip error is about
 as designed in 2001 when OSTN02 was published. 
 
 Outside the area covered by OSTN02, this module uses the small Helmert
-transformation recommended by the OS.  The OS state, that with the
+transformation recommended by the OS.  The OS state that, with the
 parameters they provide, this transformation will be accurate up to
-about 5 metres within the vicinity of the British Isles.  
+about +/-5 metres, in the vicinity of the British Isles.  
 
 You can also use this transformation within the OSTN02 polygon by
 calling the C<grid_to_ll_helmert> and C<ll_to_grid_helmert> routines.

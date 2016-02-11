@@ -9,7 +9,7 @@ use warnings;
 use Carp;
 use 5.008; # At least Perl 5.8 please
 
-our $VERSION = '2.14';
+our $VERSION = '2.15';
 
 our %EXPORT_TAGS = (
     all => [ qw( 
@@ -710,7 +710,7 @@ grid to be formatting with a valid grid square letter combination.
 
 =back
 
-=head2 Message from C<parse_grid>
+=head2 Messages from C<parse_grid>
 
 In case of error C<parse_grid> will die with one of the following
 messages:
