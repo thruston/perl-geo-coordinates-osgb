@@ -1,4 +1,4 @@
-# Toby Thurston -- 07 Feb 2016 
+# Toby Thurston -- 14 Feb 2016 
 # Plot a nice picture of a series of maps
 
 use strict;
@@ -11,6 +11,7 @@ use Geo::Coordinates::OSGB::Maps qw(%maps %name_for_map_series);
 use Getopt::Long;
 use Pod::Usage;
 use File::Temp;
+use File::Spec;
 use Carp;
 
 our $VERSION = '2.15';
@@ -78,12 +79,13 @@ Show a few major cities in the background.  Turn off with C<--notowns>.
 
 Show the boundaries of the OSTN02 transformation dataset.  Default is off.
 
-=item --coastfile shapefile.txt
+=item --[no]coast
 
-Plot the coast line found in C<shapefile.txt>.  The input should be an ESRI
+Plot the coast line found in C<gb-coastline.shapes>.  This input is an ESRI
 shape dump file with longitude and latitude pairs on each line, and each shape
-separated by a line with a leading # character.  See the supplied shape file
-for an example. Default is C<gb-coastline.shapes>.
+separated by a line with a leading # character.  The code below shows you how to 
+read it and convert it to grid coordinates.
+Default is to show the coast lines.  Turn off with C<--nocoast>.
 
 =item --usage, help, man
 
@@ -178,7 +180,8 @@ This is easy on OSX or Linux. On Windows these functions are also provided by Mi
 
 =head1 AUTHOR
 
-Toby Thurston -- 04 Feb 2016 
+Toby Thurston -- 14 Feb 2016 
+
 toby@cpan.org
 
 =cut
@@ -189,7 +192,7 @@ my $show_grid       = 1;
 my $show_graticule  = 1;
 my $show_towns      = 1;
 my $show_ostn02     = 0;
-my $coast_shapes    = 'gb-coastline.shapes';
+my $show_coast      = 1;
 my $pdf_filename;
 
 my $options_ok = GetOptions(
@@ -200,7 +203,7 @@ my $options_ok = GetOptions(
     'towns!'      => \$show_towns,
     'ostn!'       => \$show_ostn02,
     'outfile=s'   => \$pdf_filename,
-    'coastfile=s' => \$coast_shapes,
+    'coast!'      => \$show_coast,
     
     'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
     'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
@@ -324,7 +327,8 @@ if ($show_grid) {
     }
 }
 
-if ( -f $coast_shapes && open my $coast, '<', $coast_shapes ) {
+my $coast_shapes = File::Spec->catpath((File::Spec->splitpath($0))[0,1], 'gb-coastline.shapes');
+if ( $show_coast && -f $coast_shapes && open my $coast, '<', $coast_shapes ) {
     print $plotter "drawoptions(withpen pencircle scaled 0.2 withcolor (0, 172/255, 226/255));\n";
     my @poly_path = ();
     LINE: while ( <$coast> ) {
@@ -421,12 +425,24 @@ if ( $series_wanted && exists $name_for_map_series{$series_wanted} ) {
 
 }
 
-my $obp_file = 'ostn02-boundary-points.txt';
-if ($show_ostn02 && -f $obp_file && open my $obp, '<', $obp_file) {
-    # Add OSTN02 boundary
-    printf $plotter 'drawoptions(withpen pencircle scaled %g withcolor (.6,.64,.84));', 900/$scale;
-    while ( <$obp> ) {
-        printf $plotter "drawdot(%g,%g);\n", map { $_*1000/$scale } split;
+my $obp_file = File::Spec->catpath((File::Spec->splitpath($0))[0,1], 'ostn-boundary-polygons.wkt');
+if ($show_ostn02) {
+    if (-f $obp_file && open my $obp, '<', $obp_file) {
+        # Add OSTN02 boundary
+        printf $plotter 'drawoptions(withcolor (.6,.64,.84));';
+        while ( <$obp> ) {
+            #POLYGON ((79 0,99 0,99 1,100 1,100 2,101 2,101 3,102 3,102 5,103 5,103 6,104 6,104 9,105 9,105 18,104 18,104 21,103 21,103 23,102 23,102 24,101 24,101 25,100 25,100 26,99 26,99 27,98 27,98 28,97 28,97 29,95 29,95 30,91 30,91 31,87 31,87 30,84 30,84 29,82 29,82 28,80 28,80 27,79 27,79 26,78 26,78 25,77 25,77 23,76 23,76 22,75 22,75 19,74 19,74 15,73 15,73 12,74 12,74 8,75 8,75 5,76 5,76 4,77 4,77 2,78 2,78 1,79 1,79 0))
+            if ( my ($p) = $_ =~ m{\A POLYGON \s+ \(\((.*)\)\)\s*\Z}iosmx ) {
+                printf $plotter "draw %s;\n", 
+                join '--', 
+                map { sprintf '(%g, %g)', $_->[0]*1000/$scale, $_->[1]*1000/$scale }
+                map { [ split ' ' ] } split ',', $p;
+            }
+        }
+        printf $plotter 'drawoptions();';
+    }
+    else {
+        carp "No OSTN boundary shown, can't find or open $obp_file\n"
     }
 }
 

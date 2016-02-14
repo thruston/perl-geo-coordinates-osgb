@@ -21,7 +21,7 @@ examples/ll_to_bng.pl
 examples/gbguessr.pl
 examples/plot_maps.pl
 examples/gb-coastline.shapes
-examples/ostn02-boundary-points.txt
+examples/ostn-boundary-polygons.wkt
 examples/National_grid.pdf
 examples/what_map.pl
 examples/zero-points.pl
