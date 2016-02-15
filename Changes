@@ -8,6 +8,8 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Improved decimal degrees to degrees, minutes, seconds function in examples/bng_to_ll
 
+    - Minor corrections to documentation
+
 
 2.14 February 2016
 
