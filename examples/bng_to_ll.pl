@@ -98,22 +98,29 @@ my $options_ok = GetOptions(
 ) or die pod2usage();
 die pod2usage unless @ARGV or $test_me;
 
+# This routine shows how to convert from decimal degrees to DMS format
+# Note that it's important to round the number of seconds **BEFORE**
+# calculating the integer degrees and minutes, otherwise you can end up
+# with a number of seconds that rounds to 60..., and then `use bignum` 
+# ensures we keep the same number of decimal places for seconds when subtracting
+# the hours and minutes
 sub dms {
-    my ($degrees,$n,$s) = @_;
-    my $sign = $degrees < 0 ? $s : $n;
-    my $dd = abs($degrees);
-    my $d = int($dd);
-    my $mm = 60*($dd-$d);
-    my $m = int($mm);
-    my $ss = 60*($mm-$m);
-    return ($sign, $d, $m, $ss);
+    use bignum;
+    my ($degrees, $places, $hemisphere_labels ) = @_;
+    my $sign = substr $hemisphere_labels, $degrees < 0, 1;
+    my $seconds = sprintf "%.${places}f", abs($degrees)*3600;
+    my $dd = sprintf "%d", $seconds / 3600; $seconds -= 3600 * $dd;
+    my $mm = sprintf "%d", $seconds / 60;   $seconds -= 60 * $mm;
+    return qq{$sign $dd° $mm′ $seconds″};
 }
 
 sub format_ll_nicely {
     my ($model, $lat, $lon) = @_;
-    return sprintf("In $model, this is %.7g %.7g", $lat, $lon)
-         . sprintf(" or %s %d° %d′ %g″,  ", dms($lat, 'N', 'S'))
-         . sprintf("%s %d° %d′ %g″", dms($lon, 'E', 'W'));
+    return sprintf "In $model, this is %.7g %.7g = %s %s", 
+                   $lat, 
+                   $lon, 
+                   dms($lat, 4, 'NS'), 
+                   dms($lon, 4, 'EW');
 }
 
 my $gr = "@ARGV";

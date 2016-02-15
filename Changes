@@ -1,5 +1,14 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
+2.15 March 2016
+
+    - Clearer explanation of changes since V2.10 in README and Background.pod
+
+    - Changed examples/plot_maps to use proper OSTN02 polygons instead of just marking points
+
+    - Improved decimal degrees to degrees, minutes, seconds function in examples/bng_to_ll
+
+
 2.14 February 2016
 
     - Found and fixed a bug the core ellipsoid projection routine that was causing 

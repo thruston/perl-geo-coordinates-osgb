@@ -26,15 +26,108 @@ Ordnance Survey's paper maps.  And I<vice versa>, of course.
 These notes explain some of the background and implementation details
 that might help you get the most out of them.
 
-The algorithms and theory for these conversion routines are all from
-I<A Guide to Coordinate Systems in Great Britain> published by the
-OSGB, April 1999 (Revised Dec 2010) and available at
-http://www.ordnancesurvey.co.uk/.
+The algorithms and theory for these conversion routines are all from I<A
+Guide to Coordinate Systems in Great Britain> published by the OSGB,
+April 1999 (Revised Dec 2010) and available at
+http://www.ordnancesurvey.co.uk/.  You may also like to read some of the
+other introductory material there.  Should you be hoping to adapt this
+code to your own custom Mercator projection, you will find the paper
+called I<Surveying with the National GPS Network>, especially useful.
 
-You may also like to read some of the other introductory material there.
-Should you be hoping to adapt this code to your own custom Mercator
-projection, you will find the paper called I<Surveying with the National
-GPS Network>, especially useful.
+=head2 Upgrading from V2.09 or earlier
+
+These modules suffered a major overhaul in V2.10 which changed the
+semantics and interface.  The motivation for the change was to simplify
+the interface, to make WGS84 the default model for latitude and
+longitude, and to speed up conversions.  This section explains what you
+might have to change to get your old code to work with V2.10 and above.
+
+=over 4
+
+=item *
+
+C<OSGB.pm> no longer exports an C<:all> tag.  This means you must
+explicitly name all the functions that you want to use.  Fortunately
+there are rather fewer functions now.
+
+=item * 
+
+The parsing and formatting routines have been split into a separate
+module, so before V2.10 you could do this:
+
+   use Geo::Coordinates::OSGB ':all'; # Don't do this any more
+
+now you need to do this:
+
+   use Geo::Coordinates::OSGB       qw(grid_to_ll ll_to_grid);
+   use Geo::Coordinates::OSGB::Grid qw(parse_grid format_grid);
+
+=item *
+
+The old C<OSTN02.pm> module has been removed.  The data and the
+functions it provided are now integrated into C<OSGB.pm>.  The 
+old C<OSGB36_to_ETRS89> and C<ETRS89_to_OSGB36> functions are
+now built into C<ll_to_grid> and C<grid_to_ll>; the OSTN02 data 
+is used automatically when needed.
+
+=item * 
+
+The main conversion routines now assume the WGS84 model for lat/lon
+coordinates.  If you still want to work with the OSGB36 model for
+lat/lon, then you need to add the C<< { shape => 'OSGB36' } >> option
+when converting.  In other words if you did this before:
+
+   my ($e, $n) = ll_to_grid(52.5, -2);
+
+then to get exactly the same results, you now need to do this
+
+   my ($e, $n) = ll_to_grid(52.5, -2, { shape => 'OSGB36' } );
+
+On the other hand, if you are working with the WGS84 model, then before
+V2.10 you had to do this:
+
+   # Old and exact
+   my ($e, $n) = ETRS89_to_OSGB36(ll_to_grid(52.5, -2));  
+
+or this: 
+
+   # Old and approximate
+   my ($e, $n) = ll_to_grid(shift_ll_from_WGS84(52.5, -2));  
+
+now you can just do:
+
+   my ($e, $n) = ll_to_grid(52.5, -2); 
+
+This means that the most likely use case is the default.  In other words
+you can take lat/lon from your GPS and get correct grid references by
+default 
+
+=item *
+
+The functions C<shift_ll_into_WGS84> and C<shift_ll_from_WGS84> are 
+no longer provided.  They were not very accurate, and they were
+confusing.  C<ll_to_grid> and C<grid_to_ll> now do the necessary
+adjustments for you automatically.
+
+=item *
+
+The functions to parse and format grid references are moved to
+C<OSGB/Grid.pm>.  They have also been radically simplified, so that
+there are now only two functions: C<parse_grid> and C<format_grid>.
+The old names like C<parse_GPS_grid> and C<format_grid_trad> are
+retained with their former meanings, but they are just synonyms
+for the two core functions.
+
+=item *
+
+The functions to parse and format lat/lon are removed.  They 
+were not really a core function of this module.  There are other modules
+on CPAN to deal with latitude and longitude.  I also give an example of
+how to format decimal degrees as degrees, minutes, and seconds in
+C<examples/bng_to_ll.pl>.
+
+
+=back
 
 =head2 Coordinates and ellipsoid models
 
@@ -116,28 +209,34 @@ the five parameters defined as constants at the top of the module.
 
 =over 4
 
-=item True point of origin Latitude and Longitude = 49N 2W
+=item *
 
-=item False origin easting and northing = 400000 -100000
+True point of origin Latitude and Longitude = 49N, 2W
 
-=item Convergence factor = 0.9996012717
+=item * 
+
+False origin easting and northing = 400000, -100000
+
+=item * 
+
+Convergence factor = 0.9996012717
 
 =back 
 
 One consequence of the True Point of Origin of the British Grid being
-set to C<+4900-00200/> is that all the vertical grid lines are parallel
+set to 49N, 2W is that all the vertical grid lines are parallel
 to the 2W meridian; you can see this on the appropriate OS maps (for
 example Landranger sheet 184), or on the PDF picture supplied with this
 package in the C<examples> folder.  The effect of moving the False Point
 of Origin to the far south west is to make all grid references positive.
 
-Strictly grid references are given as whole numbers of metres from this
-point, with the easting always given before the northing.  For everyday
-use however, the OSGB suggest that grid references need only to be given
-within the local 100km square as this makes the numbers smaller.  For
-this purpose they divide Britain into a series of 100km squares
-identified in pair of letters:  TQ, SU, ND, etc.  The grid of the big
-squares actually used is something like this:
+Strictly speaking, grid references are given as whole numbers of metres
+from this point, with the easting always given before the northing.  For
+everyday use however, the OSGB suggest that grid references need only to
+be given within the local 100km square as this makes the numbers
+smaller.  For this purpose they divide Britain into a series of 100km
+squares identified in pair of letters:  TQ, SU, ND, etc.  The grid of
+the big squares actually used is something like this:
 
                                 HP 
                                 HU 
@@ -210,7 +309,7 @@ country.
          
 
 The chart above shows the mean difference in each grid square.  A
-positive easting difference means the WGS Lat/Lon is to the east of
+positive easting difference means the WGS84 Lat/Lon is to the east of
 OSGB36; a positive northing difference means it is to the north of
 OSGB36.  
 
@@ -237,10 +336,10 @@ whatever similar name is used on your unit.  Most units display the
 coordinates as two groups of five digits and a grid square identifier.
 The units are metres within the grid square.  However you should note
 that your consumer GPS unit will B<not> have a copy of the whole of
-OSTN02 in it.  It will be using either a Helmert transformation, or an
-even more approximate Molodenksy transformation to translate from the
-WGS84 coordinates it is getting from the satellite to find the OSGB grid
-figures.
+OSTN02 in it.  To show you an OSGB grid reference, your GPS will be
+using either a Helmert transformation, or an even more approximate
+Molodenksy transformation to translate from the WGS84 coordinates it is
+getting from the satellites.
 
 Note that the OSGB (and therefore this module) does not cover the whole
 of the British Isles, nor even the whole of the UK, in particular it
@@ -249,8 +348,6 @@ that is included is essentially the same as the coverage provided by the
 OSGB "Landranger" 1:50000 series maps.  The coverage of the OSTN02 data
 set is slightly smaller, as the OS do not define the model for any
 points more than about 2km off shore.
-
-=head2
 
 =head2 Implementation of OSTN02
 
@@ -266,15 +363,14 @@ corrections needed for your spot in the square.  Adding these exact
 corrections gives you an (easting, northing) pair in the British grid.
 
 The distributed data also includes a vertical height correction as part
-of the OSGM02 geoid module, but since this is not used in this module it
+of the OSGM02 geoid module, but this is not used in this module, so it
 is omitted from the table of data in order to save space.  The table of
 data contains 876951 rows with entries for each km intersection between
-(0,0) and (700000, 1250000).  However nearly 2/3 of these entries
-(actually 567472 of them) refer to places that are more than 10 km away
-from the British mainland (either in the sea or in Eire), and these are
-set to zero indicating that OSTN02 is not defined at these places.  In
-order to save more space, these are omitted from the beginning and end
-of each row in the data.
+(0,0) and (700000, 1250000).  However 567472 of these entries refer to
+places that are more than 10 km away from the British mainland (either
+in the sea or in Eire), and these are set to zero indicating that OSTN02
+is not defined at these places.  In order to save more space, these are
+omitted from the beginning and end of each row in the data.
 
 The OSTN02 data is included in the C<OSGB.pm> module after the
 C<__DATA__> line, and is read using the magic C<< <DATA> >> file handle.
@@ -343,7 +439,7 @@ Degrees of latitude get very slightly longer as you go further north but
 not by much.  In contrast degrees of longitude, which represent the same
 length on the ground as latitude at the equator, get significantly
 smaller in northern latitudes.  In southern England one degree of
-latitude represents about 70 km or 44 miles, in northern Scotland it's
+longitude represents about 70 km or 44 miles, in northern Scotland it's
 less than 60 km or about 35 miles.  Scaling everything down means that
 the fifth decimal place of a degree of longitude represents about
 60-70cm on the ground.
@@ -440,35 +536,36 @@ The first three series are OS maps:
   B - OS Explorer maps at 1:25000; 
   C - the old OS One-Inch maps at 1:63360.  
 
-Landranger sheet 47 appears as "A:47" and Explorer sheet 161 as "B:161"
-and so on.  As of 2015, the Explorer series of incorporates the Outdoor
-Leisure maps, so (for example) the two sheets that make up the map
-"Outdoor Leisure 1" appear as "B:OL1E" and "B:0L1W".
+Landranger sheet 47 appears in the list of keys as C<A:47>, Explorer
+sheet 161 as C<B:161>, and so on.  As of 2015, the Explorer series of
+incorporates the Outdoor Leisure maps, so (for example) the two sheets
+that make up the map `Outdoor Leisure 1' appear as C<B:OL1E> and
+C<B:OL1W>.
 
 Thanks to the marketing department at the OS and their ongoing
-re-branding exercise several Explorer sheets have been "promoted" to
+re-branding exercise several Explorer sheets have been promoted to
 Outdoor Leisure status.  So (for example) Explorer sheet 364 has
-recently become "Explorer sheet Outdoor Leisure 39".  Maps like this are
-listed with a combined name, thus: 'B:395/OL54'.
+recently become `Explorer sheet Outdoor Leisure 39'.  Maps like this are
+listed with a combined name, thus: C<B:395/OL54>.
 
 Many of the Explorer sheets are printed on both sides.  In these cases
 each side is treated as a separate sheet and distinguished with
 suffixes.  The pair of suffixes used for a map will either be N and S,
-or E and W.  So for example there is no Explorer sheet 'B:271', but you
-will find sheets 'B:271N' and 'B:271S'.  The suffixes are determined
+or E and W.  So for example there is no Explorer sheet C<B:271>, but you
+will find sheets C<B:271N> and C<B:271S>.  The suffixes are determined
 automatically from the layout of the sides, so in a very few cases it
 might not match what is printed on the sheet but it should still be
 obvious which side is which.  Where the map has a combined name the
-suffix only appears at the end. For example: "B:386/OL49E" and
-"B:386/OL49W".
+suffix only appears at the end. For example: C<B:386/OL49E> and
+C<B:386/OL49W>.
 
 Several sheets also have insets, for islands, like Lundy or The Scilly
 Isles, or for promontories like Selsey Bill or Spurn Head.  Like the
 sides, these insets are also treated as additional sheets (albeit rather
 smaller).  They are named with an alphabetic suffix so Spurn Head is on
-an inset on Explorer sheet 292 and this is labelled "B:292.a".  Where
+an inset on Explorer sheet 292 and this is labelled C<B:292.a>.  Where
 there is more than one inset on a sheet, they are sorted in descending
-order of size and labelled ".a", ".b" etc.  On some sheets the insets
+order of size and labelled C<.a>, C<.b> etc.  On some sheets the insets
 overlap the area of the main sheet, but they are still treated as
 separate map sheets.  
 

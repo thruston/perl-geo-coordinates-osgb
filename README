@@ -17,6 +17,28 @@ Note that due to the nature of this type of conversion, the conversions are
 only really useful in the vicinity of the British Isles.  If you are elsewhere 
 on the planet you need an implementation designed for your neighbourhood.
 
+CHANGES:  please note that if you are upgrading from V2.09 or earlier
+the semantics and interface have changed slightly.  
+
+- The default lat/lon is now WGS84
+
+- OSGB.pm no longer exports an ':all' tag
+
+- The functions `shift_ll_into_WGS84` and `shift_ll_from_WGS84` are 
+  no longer provided (or needed)
+ 
+- The functions formerly provided by OSTN02.pm are integrated into
+  OSGB.pm, so the subroutines `OSGB36_to_ETRS89` and `ETRS89_to_OSGB36` 
+  are no longer provided (or needed)
+
+- The functions to parse and format grid references are moved to 
+  OSGB/Grid.pm
+
+- The functions to parse and format lat/lon are removed (since they are
+  better provided by other modules)
+
+For more details, see the section on "Upgrading" in Background.pod
+
 INSTALLATION
 
 This package installs in the regular Perl way.  You don't need the C compiler
