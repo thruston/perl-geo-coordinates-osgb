@@ -6,12 +6,19 @@ use Carp;
 use 5.008; # at least Perl 5.8 please
 
 our $VERSION = '2.15';
-our @EXPORT_OK = qw( ll_to_grid grid_to_ll 
-                     ll_to_grid_helmert grid_to_ll_helmert
-                     is_grid_in_ostn02
-                     random_ostn_grid
-                     set_default_shape)
-                    ; 
+
+our %EXPORT_TAGS = (all => [qw( 
+        ll_to_grid 
+        grid_to_ll 
+
+        ll_to_grid_helmert 
+        grid_to_ll_helmert
+        
+        is_grid_in_ostn02
+        set_default_shape
+    )]);
+
+our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
 my %ellipsoid_shapes = (
     WGS84  => [ 6_378_137.000, 6_356_752.31424518, 298.257223563,  0.006694379990141316996137233540 ],
@@ -36,16 +43,6 @@ sub is_grid_in_ostn02 {
         && _find_OSTN02_shifts_at($e+5000, $n)
         && _find_OSTN02_shifts_at($e, $n-5000)
         && _find_OSTN02_shifts_at($e, $n+5000);
-}
-
-sub random_ostn_grid {
-    my ($e, $n);
-    while (1) {
-        $e = int   700_000 * rand;
-        $n = int 1_230_000 * rand;
-        last if is_grid_in_ostn02($e, $n);
-    }
-    return wantarray ? ($e, $n) : [$e, $n];
 }
 
 # constants for OSGB mercator projection
@@ -685,6 +682,15 @@ This function is called automatically by C<grid_to_ll> if the grid
 reference you supply lies outside the OSTN02 polygon.  (Generally such
 spots are in the sea).  The results are only reliable close to mainland
 Britain.
+
+=head3 C<is_grid_in_ostn02(e,n)>
+
+This function can be used to check whether a grid point is covered
+by the OSTN02 data set.  The input is an easting, northing pair as usual, 
+and the output will be either true or false.  If you get a true value you can
+expect an accurate result from C<grid_to_ll>, if false then it's likely that
+C<grid_to_ll> will fall back on using the approximate Helmert transformation. 
+This function is used by C<random_grid> from L<Geo::Coordinates::OSGB::Grid.pm>.
 
 =head1 EXAMPLES
 

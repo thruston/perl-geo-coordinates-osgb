@@ -11,23 +11,22 @@ use 5.008; # At least Perl 5.8 please
 
 our $VERSION = '2.15';
 
-our %EXPORT_TAGS = (
-    all => [ qw( 
-                 parse_grid 
-                 parse_trad_grid 
-                 parse_GPS_grid 
-                 parse_landranger_grid
-                 parse_map_grid
+our %EXPORT_TAGS = (all => [qw( 
+        parse_grid 
+        format_grid
 
-                 format_grid
-                 format_grid_trad 
-                 format_grid_GPS 
-                 format_grid_landranger
-                 format_grid_map
-
-                 random_grid 
-           )]
-    );
+        parse_trad_grid 
+        parse_GPS_grid 
+        parse_landranger_grid
+        parse_map_grid
+        
+        format_grid_trad 
+        format_grid_GPS 
+        format_grid_landranger
+        format_grid_map
+        
+        random_grid 
+        )]);
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{all} } );
 
@@ -339,41 +338,7 @@ and on the OS web site.
 
 =head1 SUBROUTINES AND METHODS
 
-=head2 Subroutines to generate grid references
-
-=over 4
-
-=item * 
-
-C<random_grid([sheet1, sheet2, ...])>
-
-Takes an optional list of map sheet identifiers, and returns a random
-easting and northing for some place covered by one of the maps.  There's
-no guarantee that the point will not be in the sea, but it will be
-within the bounding box of one of the maps and it should be within one
-of the areas covered by the OSTN02 data set.
-
-If you omit the list of sheets, then one of map sheets defined in
-L<Geo::Coordinates::OSGB::Maps> will be picked at random.  
-
-As a convenience whole numbers in the range 1..204 will be interpreted
-as Landranger sheets, as if you had written C<A:1>, C<A:2>, etc. 
-
-Any sheet identifiers in the list that are not defined in
-L<Geo::Coordinates::OSGB::Maps> will be (silently) ignored.  
-
-The easting and northing are returned as meters from the grid origin, so
-that they are suitable for input to the C<format_grid> routines.
-
-=back
-
-=head2 Subroutines to format (easting, northing) pairs
-
-=over 4
-
-=item *
-
-C<format_grid(e, n)>
+=head2 C<format_grid(e, n)>
 
 Formats an (easting, northing) pair into traditional `full national grid
 reference' with two letters and two sets of three numbers, like this `SU
@@ -390,15 +355,15 @@ B<truncated> to hectometres (as the OS system demands), so the grid
 reference refers to the lower left corner of the relevant 100m square.
 The system is described below the legend on all OS Landranger maps.
 
-=item *
-
-C<< format_grid(e, n, {form => 'SS EEE NNN', maps => 0, series => 'ABCHJ'}) >>
-
 The format grid routine takes an optional third argument to control the
 form of grid reference returned.  This should be a hash reference with
-one or more of the keys shown above, with the default values.
+one or more of the keys shown below (with the default values).
 
-=over 8
+    format_grid(e, n, {form => 'SS EEE NNN', maps => 0, series => 'ABCHJ'})
+
+=head3 Options for C<format_grid>
+
+=over 4
 
 =item form  
 
@@ -474,27 +439,19 @@ find the appropriate title.
 
 =back 
 
-=item *
-
-C<format_grid_trad(e,n)>
+=head2 C<format_grid_trad(e,n)>
 
 Equivalent to C<< format_grid(e,n, { form => 'trad' }) >>.
 
-=item *
-
-C<format_grid_GPS(e,n)>
+=head2 C<format_grid_GPS(e,n)>
 
 Equivalent to C<< format_grid(e,n, { form => 'gps' }) >>.
 
-=item *
-
-C<format_grid_map(e,n)>
+=head2 C<format_grid_map(e,n)>
 
 Equivalent to C<< format_grid(e,n, { maps => 1 }) >>.
 
-=item *
-
-C<format_grid_landranger(e,n)>
+=head2 C<format_grid_landranger(e,n)>
 
 Equivalent to
 
@@ -504,17 +461,8 @@ except that the leading "A:" will be stripped from any sheet names
 returned, and you get a slightly fancier set of phrases in a scalar
 context depending on how many map numbers are in the list of sheets.
 
-=back
 
-For more examples of formatting look at the test files.
-
-=head2 Subroutines to extract (easting, northing) pairs from grid references
-
-=over 4
-
-=item *
-
-C<parse_grid>
+=head2 C<parse_grid>
 
 The C<parse_grid> routine extracts a (easting, northing) pair from a
 string, or a list of arguments, representing a grid reference.  The pair
@@ -523,7 +471,7 @@ that you can pass them to C<format_grid> or C<grid_to_ll>.
 
 The arguments should be in one of the following forms
 
-=over 8
+=over 4
 
 =item * 
 
@@ -611,35 +559,58 @@ should work directly with the data in L<Geo::Coordinates::OSGB::Maps>.
 
 =back  
 
-=item *
-
-C<parse_trad_grid(grid_ref)>
+=head2 C<parse_trad_grid(grid_ref)>
 
 This is included only for backward compatibility.  It is now just a
 synonym for C<parse_grid>.
 
-=item *
-
-C<parse_GPS_grid(grid_ref)>
+=head2 C<parse_GPS_grid(grid_ref)>
 
 This is included only for backward compatibility.  It is now just a
 synonym for C<parse_grid>.
 
-=item *
-
-C<parse_landranger_grid(sheet, e, n)>
+=head2 C<parse_landranger_grid(sheet, e, n)>
 
 This is included only for backward compatibility.  It is now just a
 synonym for C<parse_grid>.
 
-=item *
-
-C<parse_map_grid(sheet, e, n)>
+=head2 C<parse_map_grid(sheet, e, n)>
 
 This is included only for backward compatibility.  It is now just a
 synonym for C<parse_grid>.
 
-=back 
+=head2 C<random_grid([sheet1, sheet2, ...])>
+
+Takes an optional list of map sheet identifiers, and returns a random
+easting and northing for some place covered by one of the maps.  There's
+no guarantee that the point will not be in the sea, but it will be
+within the bounding box of one of the maps and it should be within one
+of the areas covered by the OSTN02 data set.
+
+=over 4
+
+=item *
+
+If you omit the list of sheets, then one of map sheets defined in
+L<Geo::Coordinates::OSGB::Maps> will be picked at random.  
+
+=item *
+
+As a convenience whole numbers in the range 1..204 will be interpreted
+as Landranger sheets, as if you had written C<A:1>, C<A:2>, etc. 
+
+=item *
+
+Any sheet identifiers in the list that are not defined in
+L<Geo::Coordinates::OSGB::Maps> will be (silently) ignored.  
+
+=item *
+
+The easting and northing are returned as meters from the grid origin, so
+that they are suitable for input to the C<format_grid> routines.
+
+=back
+
 
 =head1 EXAMPLES
 
@@ -674,7 +645,7 @@ synonym for C<parse_grid>.
   # put leading zeros in quotes 
   ($e,$n) = parse_grid(196,636,'024');
 
-For more examples of parsing look at the test files.
+For more examples of parsing and formatting look at the test files.
 
 =head1 BUGS AND LIMITATIONS
 
@@ -706,7 +677,7 @@ any of the expected patterns.
 Too far off the grid: ...
 
 The (easting, northing) pair you supplied are too far away from the OS
-grid to be formatting with a valid grid square letter combination.
+grid to be formatted with a valid grid square letter combination.
 
 =back
 
@@ -748,7 +719,7 @@ ref, but the grid ref is not actually on that particular sheet.
 
 Failed to parse a grid reference from ...
 
-This is the catch all message issues if none of the patterns matches
+This is the catch all message issued if none of the patterns matches
 your input.
 
 =back
@@ -794,7 +765,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 =head1 AUTHOR
 
-Toby Thurston -- 10 Feb 2016 
+Toby Thurston -- 16 Feb 2016 
 
 toby@cpan.org
 

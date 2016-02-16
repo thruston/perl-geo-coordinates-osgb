@@ -44,6 +44,13 @@ might have to change to get your old code to work with V2.10 and above.
 
 =over 4
 
+=item * 
+
+The module structure changed from V2.09 to V2.10 so it would probably be
+a good idea to clean up any old installation you have and re-install a
+new version so that none of the old files hangs about.  The simplest way 
+to do this is to use the C<cpanm> application.
+
 =item *
 
 C<OSGB.pm> no longer exports an C<:all> tag.  This means you must
