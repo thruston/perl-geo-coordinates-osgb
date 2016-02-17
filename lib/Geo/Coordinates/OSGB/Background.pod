@@ -371,29 +371,42 @@ corrections gives you an (easting, northing) pair in the British grid.
 
 The distributed data also includes a vertical height correction as part
 of the OSGM02 geoid module, but this is not used in this module, so it
-is omitted from the table of data in order to save space.  The table of
-data contains 876951 rows with entries for each km intersection between
-(0,0) and (700000, 1250000).  However 567472 of these entries refer to
-places that are more than 10 km away from the British mainland (either
-in the sea or in Eire), and these are set to zero indicating that OSTN02
-is not defined at these places.  In order to save more space, these are
-omitted from the beginning and end of each row in the data.
+is omitted from the table of data in order to save space.  
 
-The OSTN02 data is included in the C<OSGB.pm> module after the
-C<__DATA__> line, and is read using the magic C<< <DATA> >> file handle.
-In my tests this proved to be the fastest way to load all that data, by
-a long way. 
+The table of data supplied by the Orndance Survey contains 876951 rows with
+entries for each km intersection between (0,0) and (700000, 1250000).  However
+567472 of these entries refer to places that are more than 10 km away from the
+British mainland (either in the sea or in Eire), and these are set to zero
+indicating that OSTN02 is not defined at these places.  In order to save more
+space, these are omitted from the beginning and end of each row in the data as
+stored in my implementation. The last 21 rows (north of Shetland) are all
+zeroes, so these are omitted as well.
 
-There are 1229 rows of data, and each row contains up to 701 pairs of
-shift data encoded as pairs of hexadecimal integers representing the
-shift in mm.  Leading and trailing zeros are omitted, and the number of
-leading zeros omitted is stored in the first three characters of each
-row.
+My implementation of the OSTN02 data is included in the C<OSGB.pm> module after
+the C<__DATA__> line, and is read using the magic C<< <DATA> >> file handle.
+In tests this proved to be the fastest way to load all that data, by a long
+way. 
+
+There are 1229 rows of data, and each row contains up to 701 pairs of shift
+data encoded as pairs of integers representing the shift in mm.  Leading and
+trailing zeros are omitted, and the number of leading zeros omitted is stored
+in the first three characters of each row.  The integer pairs are all coded in
+a home-grown version of base32 using the character set 
+C<< 0123456789:;<=>?@ABDEFGHIJKLMNO >>.  This allows integers up to 32767 to be
+stored in three bytes of printable ASCII.  It would (obviously) be possible to
+compress the data more by storing them as binary integers but I need them to be
+printable ASCII so that they can be stored inside C<OSGB.pm>.  Decoding them is
+very slightly slower than decoding hex strings, but using 3 bytes integer
+instead of 4 reduces the memory and loading time by 25%.
 
 Earlier versions of the module had the data in a hash, but this was much
 too slow to load.  Later versions stored keys with the data and use a
 binary search to find the right data, but the current method with no
-keys requires 2/3 of the space and runs much faster.
+keys requires less space and runs much faster.
+
+The C<build> directory includes a script called C<pack_ostn_data> which creates
+the 1229 rows of data in the correct form from the C<OSTN02_OSGM02_GB.txt> file
+which is available from the Ordnance Survey.
 
 =head2 Accuracy, uncertainty, and speed
 
