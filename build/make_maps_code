@@ -1,10 +1,73 @@
 #! /usr/bin/env perl
-# Toby Thurston -- 13 Jan 2016 
+# Toby Thurston -- 17 Feb 2016 
 # compile the map tables into perl source code
 #
 use strict;
 use warnings;
 use Carp;
+use File::Spec;
+use Cwd;
+use Getopt::Long;
+use Pod::Usage;
+
+=pod
+
+=head1 NAME
+
+make_maps_code - build the Maps module from the contents of the maps/ directory.
+
+Run this from the root of the distribution.  Default behaviour is to create a new copy
+of the module in the current directory.
+
+=head1 SYNOPSIS
+
+  build/make_maps_code --diff | --update --version v.vv
+
+Series to be built should be defined in maps/map_series.txt and 
+data should all be in the maps/ directory.
+
+=head1 OPTIONS
+
+=over 4 
+
+=item --diff
+
+Create the module in the current directory and call diff to compare it 
+to the version in lib
+
+=item --update
+
+Overwrite the module in lib directly.
+
+=item --version v.vv
+
+Apply the new version number v.vv to the newly created module.
+
+=back
+
+=head1 AUTHOR 
+
+Toby Thurston -- 17 Feb 2016 
+
+=cut
+
+my $want_diff   = 0;
+my $want_update = 0;
+my $new_version = '2.15';
+my $module_name = 'Maps.pm';
+my $lib_module_name = File::Spec->catfile(qw(lib Geo Coordinates OSGB), $module_name);
+
+my $options_ok = GetOptions(
+    'diff!'     => \$want_diff,
+    'update!'   => \$want_update,
+    'version=s' => \$new_version,
+
+    'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
+    'help'        => sub { pod2usage(-verbose => 1, -exitstatus => 0) },                         
+    'man'         => sub { pod2usage(-verbose => 2, -exitstatus => 0) },
+
+);
+die pod2usage() if @ARGV || ! $options_ok;
 
 sub polygon_area_in_km {
     my $p = shift;
@@ -54,8 +117,14 @@ sub pair_label_suffixes {
     return ($label1, $label2);
 }
 
+die "Run this from the root directory\n" unless substr(cwd(), -25) eq 'perl-geo-coordinates-osgb';
+
+my $map_dir = 'maps';
+
+die "Cannot see the maps/ directory\n" unless -d $map_dir;
+
 my @series_to_build = ();
-open my $control, '<', 'map_series.txt' or die "Cannot open control file\n";
+open my $control, '<', 'maps/map_series.txt' or die "Cannot open control file: $!\n";
 while ( <$control> ) {
     chomp;
     next unless my ($id, $file, $sides, $max_inset_area, $max_sheet_area, $short_name, $long_name) =
@@ -64,23 +133,22 @@ while ( <$control> ) {
     $long_name =~ s/\A\"(.*)\"\Z/$1/s or
     $long_name =~ s/\A\'(.*)\'\Z/$1/s;
 
+    my $catalogue_name = File::Spec->catfile($map_dir, sprintf('catalogue-%s.txt', $file));
+    my $polygons_name  = File::Spec->catfile($map_dir, sprintf('polygons-%s.txt', $file));
+
+    die "Cannot see $catalogue_name. $!\n" unless -f $catalogue_name;
+    die "Cannot see $polygons_name. $!\n" unless -f $polygons_name;
+
     push @series_to_build, {
         id         => $id,                                
-        cat_file   => sprintf('catalogue-%s.txt', $file), 
-        poly_file  => sprintf('polygons-%s.txt', $file),  
+        cat_file   => $catalogue_name,
+        poly_file  => $polygons_name,
         max_inset_area => $max_inset_area,                    
         max_sheet_area => $max_sheet_area,                    
         short_name => $short_name,                        
         long_name  => $long_name,                        
     }
 }
-
-#for my $s (@series_to_build) {
-#    for my $k (sort keys %$s) {
-#        print "$k --> $s->{$k}\n";
-#    }
-#}
-
 
 my @sheets;
 my %label_for;
@@ -240,39 +308,44 @@ for my $s (@series_to_build) {
     close $fh;
 }
 
-
-open my $perl, '>', '../lib/Geo/Coordinates/OSGB/Maps.pm';
-print $perl <<'END_PREAMBLE';
+my $pm;
+if ($want_update) {
+    open $pm, '>', $lib_module_name;
+    warn "Writing to $lib_module_name\n";
+}
+else {
+    open $pm, '>', $module_name;
+    warn "Writing to $module_name\n";
+}
+print $pm <<'END_PREAMBLE';
 package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.14';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
-our %name_for_map_series = ( 
-  A => 'OS Landranger', 
-  B => 'OS Explorer',
-  C => 'OS One-Inch 7th series',
-  H => 'Harvey British Mountain maps',
-  J => 'Harvey Superwalker',
-);
 END_PREAMBLE
+print $pm "our \$VERSION = '$new_version';\n";
+print $pm "our \%name_for_map_series = ( \n";
+for my $s (@series_to_build) {
+    printf $pm "  %s => '%s',\n", $s->{id}, $s->{long_name};
+}
+print $pm ");\n";
 
 for my $m (@sheets) {
-    print $perl '$maps{"', $m->{key}, '"} = { ';
-    printf $perl 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
+    print $pm '$maps{"', $m->{key}, '"} = { ';
+    printf $pm 'bbox => [[%d, %d], [%d, %d]], ', $m->{bbox}->[0][0], $m->{bbox}->[0][1], $m->{bbox}->[1][0], $m->{bbox}->[1][1];
     for my $f ( qw{area series number parent title} ) {
         die "No f\n" unless defined $f;
         die "No $f in $m->{key}\n" unless defined $m->{$f};
-        printf $perl "%s => '%s', ", $f, $m->{$f};
+        printf $pm "%s => '%s', ", $f, $m->{$f};
     }
-    print $perl 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{poly}}), ']'; # no comma because last
-    print $perl " };\n";
+    print $pm 'polygon => [', join(',', map { sprintf '[%d,%d]', $_->[0], $_->[1] } @{$m->{poly}}), ']'; # no comma because last
+    print $pm " };\n";
 }
 
-print $perl "1;\n\n";
-print $perl <<'POD';
+print $pm "1;\n\n";
+print $pm <<'END_PODA';
 =pod
 
 =head1 NAME
@@ -288,13 +361,13 @@ This module exports no functions, but just two hashes of data.
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
 
-Currently (V2.13) we have
+END_PODA
+print $pm "Currently (V$new_version) we have\n\n";
+for my $s (@series_to_build) {
+    printf $pm "  %s : %s\n", $s->{id}, $s->{long_name};
+}
 
-  A => 'OS Landranger', 
-  B => 'OS Explorer',
-  C => 'OS One-Inch 7th series',
-  H => 'Harvey British Mountain maps',
-  J => 'Harvey Superwalker',
+print $pm <<'END_PODB';
 
 =head2 Hash C<%maps>
 
@@ -348,6 +421,10 @@ the same title.
 
 =cut
 
-POD
-close $perl;
+END_PODB
+close $pm;
 warn sprintf "Wrote %d sheet definitions to maps module\n", scalar @sheets;
+
+if ($want_diff && -f $module_name) {
+    system 'diff', '-b', $lib_module_name, $module_name;
+}

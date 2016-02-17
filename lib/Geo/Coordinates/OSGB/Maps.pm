@@ -2,14 +2,14 @@ package Geo::Coordinates::OSGB::Maps;
 use base qw(Exporter);
 use strict;
 use warnings;
-our $VERSION = '2.15';
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
+our $VERSION = '2.15';
 our %name_for_map_series = ( 
-  A => 'OS Landranger', 
+  A => 'OS Landranger',
   B => 'OS Explorer',
   C => 'OS One-Inch 7th series',
-  H => 'Harvey British Mountain maps',
+  H => 'Harvey British Mountain Maps',
   J => 'Harvey Superwalker',
 );
 $maps{"A:1"} = { bbox => [[428200, 1180000], [469000, 1220600]], area => '1601.7025', series => 'A', number => '1', parent => 'A:1', title => 'Shetland – Yell, Unst and Fetlar', polygon => [[429000,1180000],[469000,1180000],[469000,1220000],[462300,1220000],[462000,1220150],[461500,1220550],[461300,1220600],[461000,1220550],[460400,1220300],[460250,1220000],[429000,1220000],[429000,1187400],[428200,1187000],[428200,1186450],[429000,1185600],[429000,1180000]] };
@@ -1161,13 +1161,13 @@ This module exports no functions, but just two hashes of data.
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
 
-Currently (V2.14) we have
+Currently (V2.15) we have
 
-  A => 'OS Landranger', 
-  B => 'OS Explorer',
-  C => 'OS One-Inch 7th series',
-  H => 'Harvey British Mountain maps',
-  J => 'Harvey Superwalker',
+  A : OS Landranger
+  B : OS Explorer
+  C : OS One-Inch 7th series
+  H : Harvey British Mountain Maps
+  J : Harvey Superwalker
 
 =head2 Hash C<%maps>
 

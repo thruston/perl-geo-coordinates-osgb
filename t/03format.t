@@ -63,5 +63,5 @@ use Geo::Coordinates::OSGB::Maps qw/%maps %name_for_map_series/;
 my $m = $sheets[0];
 my $title = $maps{$m}->{title};
 is("An Teallach is at $gr on the $title sheet of the $name_for_map_series{H} series", 
-   "An Teallach is at NH 093 879 on the Torridon & Fisherfield sheet of the Harvey British Mountain maps series", "Harveys");
+   "An Teallach is at NH 093 879 on the Torridon & Fisherfield sheet of the Harvey British Mountain Maps series", "Harveys");
 

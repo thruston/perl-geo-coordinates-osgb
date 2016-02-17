@@ -26,7 +26,8 @@ examples/ostn-boundary-polygons.wkt
 examples/National_grid.pdf
 examples/what_map.pl
 examples/zero-points.pl
-maps/make_maps_code
+build/make_maps_code
+build/pack_ostn_data
 maps/map_series.txt
 maps/catalogue-harvey-british-mountain.txt
 maps/catalogue-harvey-superwalker.txt
