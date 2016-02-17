@@ -373,7 +373,7 @@ if ($show_towns ) {
     }
 }
 
-if ( $series_wanted && exists $name_for_map_series{$series_wanted} ) {
+if ( $series_wanted && @sides ) { # sides will be empty if none of the maps matched series_wanted
 
     print $plotter "drawoptions(withpen pencircle scaled 0.2);defaultscale:=0.71;\n";
 
@@ -406,8 +406,13 @@ if ( $series_wanted && exists $name_for_map_series{$series_wanted} ) {
         print $plotter "draw p withcolor $map_color;\n";
     }
 
-    print $plotter sprintf "label.rt(\"%s sheet index\" infont defaultfont scaled 2, (0,%g));\n",
-      $name_for_map_series{$series_wanted}, 1300000/$scale;
+    my $y = 1300000/$scale;
+    for my $s ( split '', $series_wanted ) {
+        print $plotter sprintf "label.rt(\"%s sheet index\" infont defaultfont scaled 2, (0,%g)) withcolor %s;\n",
+                               $name_for_map_series{$s}, $y,
+                               exists $color_for{$s} ? $color_for{$s} : 'black';
+        $y -= 24;
+    }
 
     # add sheet names for Harvey maps
     if ( $series_wanted eq 'H' or $series_wanted eq 'J' ) {

@@ -275,7 +275,9 @@ sub _find_OSTN02_shifts_at {
 
 sub _d32 {
     my ($a, $b, $c) = map { ord } unpack 'AAA';
-    return ($a << 10) + ($b << 5) + $c - 50736;
+    return ($a << 10) + ($b << 5) + $c - 50736; 
+    # the magic number here is (48<<10)+(48<<5)+48 to allow for us
+    # using a character set based at chr(48) = 0.
 }
 
 sub _get_ostn_pair_reference {
