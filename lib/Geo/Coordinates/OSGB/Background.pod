@@ -596,7 +596,70 @@ the module is able to work out when a point is covered by one of these
 extensions.
 
 In the examples folder there is an extended example showing how to work
-with the map data.
+with the map data as supplied through the C<Maps.pm> interface.
+
+The source files for the map data are in the C<maps> directory.  The script that
+builds C<Maps.pm> from the source files is C<build/make_maps_code>.
+
+It's probably fair to say that everything about the maps is still (2016)
+experimental and may change in the future.
+
+For each series there are (currently) two files
+
+=over 4
+
+=item *
+
+C<catalogue> which defines: 
+an index number for each map (unique to this project);
+the sheet number for the map - not necessarily an integer;
+the sheet title as a UTF8 string;
+the current ISBN number for maps that have them.
+
+=item *
+
+C<polygons> which has:
+index numbers that match the corresponding C<catalogue>;
+sheet numbers that match the corresponding C<catalogue>;
+a flag - an integer to show the status of the entry (no formal meaning);
+followed by a MULTIPOLYGON in WKT format.
+
+=back
+
+There is one line in each of the files for each map in the series.  The data
+format for the sheet polygons is Well Known Text (as defined in Wikipedia).
+The set of polygons for each map is defined as a MULTIPOLYGON; a list of
+POLYGONS.  There are no holes in any of the polygons.  A missing polygon list
+is recorded as "EMPTY" (this is part of WKT).
+
+The units are metres from the false point of origin (which is some miles west
+of the Scilly Isles).  So the south west corner of Landranger sheet 204, which has
+traditional grid reference SW 720 140 is defined in this data as "172000
+14000".  This is essentially what "parse_grid" returns. No leading zeros
+needed.
+
+The polygon starts at the south west corner of the sheet and is recorded
+anticlockwise.  WKT insists that the first pair is repeated at the end to close
+the polygon. So a simple 40km square Landranger sheet with no insets or
+extensions, such as Sheet 152, whose SW corner is at SP 530 300 is recorded as
+
+    (((453000 230000, 493000 230000, 493000 270000, 453000 270000, 453000 230000)))
+
+If the sheet boundary is more complicated than a square, the polygon consists of a coordinate
+pair for each corner.  Extensions - where the coloured printing spills
+over the neat edge - are included as part of the main polygon in the appropriate place,
+always moving anticlockwise.  Extensions don't have to be rectilinear but they
+are made up of straight lines.  Extensions consisting of administrative boundaries
+and labels are ignored.  If in doubt, use common sense.  
+
+If an inset is drawn on the map sheet with its own grid margin then it is recorded
+as a separate polygon following the WKT format, even if it overlaps the main sheet.
+
+On OS Landranger maps,  the first (and last) pair should always be the SW
+corner, if an extension affects the SW corner, start and end with the regular
+corner pair even if they are technically redundant.  This allows me to find the
+SW corners currently defined for the Landranger maps easily.  In other series,
+start somewhere near the SW and go anticlockwise.
 
 =cut
 

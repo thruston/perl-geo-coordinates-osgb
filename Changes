@@ -2,6 +2,9 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
 2.15 March 2016
 
+    - Packed OSTN02 data more densely so that OSGB.pm is smaller; 
+      so it loads faster and needs less memory
+
     - Clearer explanation of changes since V2.10 in README and Background.pod
 
     - Changed examples/plot_maps to use proper OSTN02 polygons instead of just marking points
@@ -14,8 +17,6 @@ Revision history for Perl extension Geo::Coordinates::OSGB
     - Minor corrections and additions to documentation
 
     - Moved build utilities to new 'build' directory + improved documentation for them
-
-    - Packed OSTN02 data more densely so that OSGB.pm loads faster and needs less memory
 
 
 2.14 February 2016

@@ -283,7 +283,7 @@ sub _d32 {
 sub _get_ostn_pair_reference {
     my $x = shift;
     my $y = shift;
-    my $k = sprintf "%03d%03d", $x, $y;
+    my $k = $x+701*$y;
 
     if ( exists $ostn_shifts_for{$k} ) {
         return $ostn_shifts_for{$k}

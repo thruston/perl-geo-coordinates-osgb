@@ -76,7 +76,7 @@ is($gotten, $given, "Fixed pos from OS example");
 
 for my $k ( sort keys %test_input ) {
     my ($lat,$lon, $e, $n) = @{$test_input{$k}}{qw/lat lon e n/};
-    
+     
     my $given_grid = sprintf "%.3f %.3f", $e, $n;
     my $got_grid   = sprintf "%.3f %.3f", ll_to_grid($lat, $lon);
 

@@ -50,7 +50,8 @@ should be one of the keys of the map series defined
 by L<Geo::Coordinates::OSGB::Maps>.  Currently: A=Landranger, 
 B=Explorer, C=One-inch, H=Harvey Mountain Maps, J=Harvey Superwalker.
 
-You can use several keys but the result may be unreadable.
+You can combine keys to get a concordance but the result may not be easy to read.
+
 Default is none - no map outlines are printed.
 
 =item --paper A[01234]
@@ -193,6 +194,7 @@ my $show_graticule  = 1;
 my $show_towns      = 1;
 my $show_ostn02     = 0;
 my $show_coast      = 1;
+my $call_MP         = 1;
 my $pdf_filename;
 
 my $options_ok = GetOptions(
@@ -204,6 +206,7 @@ my $options_ok = GetOptions(
     'ostn!'       => \$show_ostn02,
     'outfile=s'   => \$pdf_filename,
     'coast!'      => \$show_coast,
+    'mpost!'      => \$call_MP,
     
     'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
     'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
@@ -456,10 +459,12 @@ print $plotter 'setbounds currentpicture to bbox currentpicture shifted -z1 scal
 print $plotter "endfig;end.\n";
 close $plotter;
 
-system('mpost', $plotter->filename)               == 0 or croak "Metapost call failed";
-system('epstopdf', "-o=$pdf_filename", $epsfile)  == 0 or croak "epstopdf call failed";
+if ( $call_MP ) {
+    system('mpost', $plotter->filename)               == 0 or croak "Metapost call failed";
+    system('epstopdf', "-o=$pdf_filename", $epsfile)  == 0 or croak "epstopdf call failed";
 
-unlink($epsfile) or carp "Failed to delete temporary file: $epsfile, $!";
-unlink($logfile) or carp "Failed to delete temporary file: $logfile, $!";
+    unlink($epsfile) or carp "Failed to delete temporary file: $epsfile, $!";
+    unlink($logfile) or carp "Failed to delete temporary file: $logfile, $!";
 
-print "$0: Created $pdf_filename\n";
+    print "$0: Created $pdf_filename\n";
+}
