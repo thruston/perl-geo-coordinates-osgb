@@ -4,7 +4,7 @@ use strict;
 use warnings;
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 our %name_for_map_series = ( 
   A => 'OS Landranger',
   B => 'OS Explorer',
@@ -1148,9 +1148,14 @@ $maps{"J:401"} = { bbox => [[214162, 464312], [250179, 505023]], area => '791.66
 
 =pod
 
+
 =head1 NAME
 
 Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
+
+=head1 VERSION
+
+V2.16
 
 =head1 SUBROUTINES AND METHODS
 
@@ -1160,8 +1165,7 @@ This module exports no functions, but just two hashes of data.
 
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
-
-Currently (V2.15) we have
+Currently we have:
 
   A : OS Landranger
   B : OS Explorer

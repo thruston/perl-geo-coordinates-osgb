@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008; # at least Perl 5.8 please
 
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 
 our %EXPORT_TAGS = (all => [qw( 
         ll_to_grid 
@@ -274,7 +274,7 @@ sub _find_OSTN02_shifts_at {
 }
 
 sub _d32 {
-    my ($a, $b, $c) = map { ord } unpack 'AAA';
+    my ($a, $b, $c) = unpack 'CCC', $_;
     return ($a << 10) + ($b << 5) + $c - 50736; 
     # the magic number here is (48<<10)+(48<<5)+48 to allow for us
     # using a character set based at chr(48) = 0.
@@ -450,7 +450,7 @@ Great Britain.
 
 =head1 VERSION
 
-Examine $Geo::Coordinates::OSGB::VERSION for details.
+2.16
 
 =head1 SYNOPSIS
 

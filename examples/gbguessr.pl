@@ -13,7 +13,7 @@ use Browser::Open qw(open_browser);
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 
 sub format_grid_streetmap {
     my $e = shift;

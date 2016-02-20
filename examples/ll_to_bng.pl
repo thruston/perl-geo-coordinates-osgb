@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB::Grid qw/format_grid_landranger/;
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 
 =pod
 

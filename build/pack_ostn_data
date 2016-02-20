@@ -12,7 +12,7 @@ our $VERSION = 2.15;
 
 =head1 NAME
 
-pack_ostn_data - create the data to go on the end of OSGB.pm
+pack_ostn_data - [not for users] re-create the OSTN02 data for OSGB.pm
 
 Run this from the root of the distribution.  Default behaviour is to create a new copy
 of the module in the current directory.
@@ -55,18 +55,12 @@ my $options_ok = GetOptions(
 die pod2usage() if @ARGV || ! $options_ok;
 
 
-# ideally designed for 0 < $ < 2**15 = 32768, but will work ok with higher
+# ideally designed for 0 <= $d < 2**15 = 32768, but will work ok with higher
 sub b32 {
     my $d = shift;
     my $h = $d >> 10; $d -= $h << 10;
     my $t = $d >> 5;  $d -= $t << 5;
     return join '', map { chr 48+$_ } $h, $t, $d;
-}
-
-# This is not used here, but it unpacks what is packed by b32
-sub d32 {
-    my ($a, $b, $c) = map { ord($_) - 48 } unpack 'AAA', $_[0];
-    return $a << 10 | $b << 5 | $c;
 }
 
 open my $ostn_fh, '<', $source or die "Can't open $source: $!\n";
@@ -79,6 +73,9 @@ while (<$ostn_fh>) {
     (undef, undef, undef, $x, $y, undef, $datum) = split ',';
    
     $row .= int $datum ? b32(int ($x*1000) - 86000) .  b32(int ($y*1000) + 82000) : '000000';
+    # The constants subtracted and added bring the values into the range 0 < xxx < 2**15
+    # Note that they are never zeros like this..  Zeros are reserved for "datum 0" - the undefined
+    # area
 
     if ( length $row == 4206 ) {
         push @OSTN02, $row;

@@ -9,7 +9,7 @@ use warnings;
 use Carp;
 use 5.008; # At least Perl 5.8 please
 
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 
 our %EXPORT_TAGS = (all => [qw( 
         parse_grid 
@@ -321,7 +321,7 @@ Geo::Coordinates::OSGB::Grid - Format and parse British National Grid references
 
 =head1 VERSION
 
-Examine $Geo::Coordinates::OSGB::Grid::VERSION for details.
+2.16
 
 =head1 SYNOPSIS
 

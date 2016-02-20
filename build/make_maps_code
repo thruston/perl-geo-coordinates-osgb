@@ -1,5 +1,5 @@
 #! /usr/bin/env perl
-# Toby Thurston -- 17 Feb 2016 
+# 
 # compile the map tables into perl source code
 #
 use strict;
@@ -14,7 +14,7 @@ use Pod::Usage;
 
 =head1 NAME
 
-make_maps_code - build the Maps module from the contents of the maps/ directory.
+make_maps_code - [not for users] rebuild Maps.pm from the contents of the maps directory.
 
 Run this from the root of the distribution.  Default behaviour is to create a new copy
 of the module in the current directory.
@@ -47,13 +47,13 @@ Apply the new version number v.vv to the newly created module.
 
 =head1 AUTHOR 
 
-Toby Thurston -- 17 Feb 2016 
+Toby Thurston -- 20 Feb 2016 
 
 =cut
 
 my $want_diff   = 0;
 my $want_update = 0;
-my $new_version = '2.15';
+my $new_version = '2.16';
 my $module_name = 'Maps.pm';
 my $lib_module_name = File::Spec->catfile(qw(lib Geo Coordinates OSGB), $module_name);
 
@@ -344,13 +344,20 @@ for my $m (@sheets) {
     print $pm " };\n";
 }
 
-print $pm "1;\n\n";
+print $pm "1;\n\n=pod\n\n";
 print $pm <<'END_PODA';
-=pod
 
 =head1 NAME
 
 Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
+
+=head1 VERSION
+
+END_PODA
+
+print $pm "V$new_version\n";
+
+print $pm <<'END_PODB';
 
 =head1 SUBROUTINES AND METHODS
 
@@ -360,14 +367,14 @@ This module exports no functions, but just two hashes of data.
 
 The keys are the single letter codes used for each map series.  
 The values are the descriptive names of each series.
+Currently we have:
 
-END_PODA
-print $pm "Currently (V$new_version) we have\n\n";
+END_PODB
 for my $s (@series_to_build) {
     printf $pm "  %s : %s\n", $s->{id}, $s->{long_name};
 }
 
-print $pm <<'END_PODB';
+print $pm <<'END_PODC';
 
 =head2 Hash C<%maps>
 
@@ -418,10 +425,9 @@ The title of the map.  Different sheets and insets from the same map will have
 the same title.
 
 =back
+END_PODC
 
-=cut
-
-END_PODB
+print $pm "\n=cut\n\n";
 close $pm;
 warn sprintf "Wrote %d sheet definitions to maps module\n", scalar @sheets;
 

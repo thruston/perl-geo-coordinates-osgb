@@ -14,7 +14,7 @@ use File::Temp;
 use File::Spec;
 use Carp;
 
-our $VERSION = '2.15';
+our $VERSION = '2.16';
 
 =pod
 
@@ -32,8 +32,7 @@ provided by L<Geo::Coordinates::OSGB::Maps>.
 This programme shows off several features of L<Geo::Coordinates::OSGB>.
 
   perl plot_maps.pl --series A --paper A3 --outfile some.pdf 
-                    --[no]grid --[no]graticule --[no]towns --[no]ostn
-                    --coastfile gb-coastline.shapes
+                    --[no]grid --[no]graticule --[no]towns --[no]ostn --[no]coast
 
 If you have a working TeXLive installation with GhostScript installed,
 you can use it to produce PDF index maps of the various map series
