@@ -15,7 +15,7 @@ Revision history for Perl extension Geo::Coordinates::OSGB
     - Improved decimal degrees to degrees, minutes, seconds function in examples/bng_to_ll
 
     - Fixed examples/plot_maps.pl so that it makes a better attempt to show more 
-      than one map series on the same map
+      than one map series on the same plot
 
     - Minor corrections and additions to documentation
 
