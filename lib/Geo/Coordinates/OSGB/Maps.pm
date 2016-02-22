@@ -4,7 +4,7 @@ use strict;
 use warnings;
 our @EXPORT_OK = qw(%maps %name_for_map_series);
 our %maps;
-our $VERSION = '2.16';
+our $VERSION = '2.17';
 our %name_for_map_series = ( 
   A => 'OS Landranger',
   B => 'OS Explorer',
@@ -1148,14 +1148,13 @@ $maps{"J:401"} = { bbox => [[214162, 464312], [250179, 505023]], area => '791.66
 
 =pod
 
-
 =head1 NAME
 
 Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
 
 =head1 VERSION
 
-V2.16
+V2.17
 
 =head1 SUBROUTINES AND METHODS
 
@@ -1163,7 +1162,7 @@ This module exports no functions, but just two hashes of data.
 
 =head2 Hash C<%name_for_map_series>
 
-The keys are the single letter codes used for each map series.  
+The keys are the single letter codes used for each map series.
 The values are the descriptive names of each series.
 Currently we have:
 
@@ -1190,18 +1189,18 @@ from the grid origin)
 =item polygon
   
 A list of pairs of coordinates (in metres from grid origin) that define the
-corners of the sheet.  The list starts at the SW corner (approximately, on some
-sheets it's not entirely obvious where to start), and works round
-anticlockwise.  In all cases the last pair is the same as the first pair.
+corners of the sheet.  The list starts at the SW corner (approximately, some do
+not have an obvious place to start), and works round anticlockwise.  In all
+cases the last pair is the same as the first pair.
 
 =item area 
 
-The calculated area of the sheet in square kilometres
+The calculated area of the sheet in square kilometres.
 
 =item series
 
 A single letter series identifier -- this will be one of the keys from the
-"name_for_map_series" hash
+"name_for_map_series" hash.
 
 =item number
 
@@ -1213,7 +1212,7 @@ numbers divided by a "/"; such as "418/OL60" in the Explorer series.
 
 =item parent
 
-The key of the parent map for an inset.  Main sheets of a map, will have
+The key of the parent map for an inset.  Main sheets of a map will have
 "parent" equal to their own key.
 
 =item title
@@ -1224,4 +1223,3 @@ the same title.
 =back
 
 =cut
-
