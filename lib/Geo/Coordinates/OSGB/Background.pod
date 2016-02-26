@@ -6,7 +6,7 @@ Geo::Coordinates::OSGB::Background - Background and extended description
 
 =head1 VERSION
 
-2.16
+2.17
 
 =head1 DESCRIPTION
 
@@ -52,12 +52,6 @@ new version so that none of the old files hangs about.  The simplest way
 to do this is to use the C<cpanm> application.
 
 =item *
-
-C<OSGB.pm> no longer exports an C<:all> tag.  This means you must
-explicitly name all the functions that you want to use.  Fortunately
-there are rather fewer functions now.
-
-=item * 
 
 The parsing and formatting routines have been split into a separate
 module, so before V2.10 you could do this:
@@ -601,10 +595,10 @@ with the map data as supplied through the C<Maps.pm> interface.
 The source files for the map data are in the C<maps> directory.  The script that
 builds C<Maps.pm> from the source files is C<build/make_maps_code>.
 
-It's probably fair to say that everything about the maps is still (2016)
-experimental and may change in the future.
+It's probably fair to say that currently (in early 2016) everything about the
+maps is still experimental and may change in the future.
 
-For each series there are (currently) two files
+For each series there are two files:
 
 =over 4
 

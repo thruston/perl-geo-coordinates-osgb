@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008; # at least Perl 5.8 please
 
-our $VERSION = '2.16';
+our $VERSION = '2.17';
 
 our %EXPORT_TAGS = (all => [qw( 
         ll_to_grid 
@@ -450,7 +450,7 @@ Great Britain.
 
 =head1 VERSION
 
-2.16
+2.17
 
 =head1 SYNOPSIS
 
@@ -698,6 +698,12 @@ and the output will be either true or false.  If you get a true value you can
 expect an accurate result from C<grid_to_ll>, if false then it's likely that
 C<grid_to_ll> will fall back on using the approximate Helmert transformation. 
 This function is used by C<random_grid> from L<Geo::Coordinates::OSGB::Grid.pm>.
+
+=head3 Importing all the functions
+
+You can import all the functions defined in C<OSGB.pm> with an C<:all> tag.
+
+    use Geo::Coordinates::OSGB ':all';
 
 =head1 EXAMPLES
 
