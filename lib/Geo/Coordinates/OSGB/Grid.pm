@@ -650,11 +650,14 @@ For more examples of parsing and formatting look at the test files.
 =head1 BUGS AND LIMITATIONS
 
 The useful area of these routines is confined to the British Isles, not
-including Ireland or the Channel Islands.  But very little range
-checking is done, so you can generate pseudo grid references for points
-that are some way outside this useful area.  The corners of this larger
-area run from 64.75N 32.33W (Iceland) to 65.8N 22.65E (Norway) to 44.5N
-11.8E (Venice) to 44N 19.5W (the Western Approaches). 
+including Ireland or the Channel Islands.  But very little range checking is
+done, so you can generate pseudo grid references for points that are some way
+outside this useful area.  For example we have St Peter Port in Guernsey at
+C<XD 611 506> and Rockall at C<MC 035 165>.  The working area runs from square
+C<AA> in the far north west to C<ZZ> in the far south east.  In WGS84 terms the
+corners run from 64.75N 32.33W (Iceland) to 65.8N 22.65E (Norway) to 44.5N
+11.8E (Venice) to 44N 19.5W (the Western Approaches).  This is something of a 
+geodesy toy rather than a useful function.
 
 =head1 DIAGNOSTICS
 

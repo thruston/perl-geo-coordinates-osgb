@@ -452,6 +452,9 @@ Great Britain.
 
 2.17
 
+=for HTML <a href="https://travis-ci.org/thruston/perl-geo-coordinates-osgb">
+<img src="https://travis-ci.org/thruston/perl-geo-coordinates-osgb.svg?branch=master"></a>
+
 =head1 SYNOPSIS
 
   use Geo::Coordinates::OSGB qw(ll_to_grid grid_to_ll);
