@@ -121,7 +121,7 @@ for the two core functions.
 
 =item *
 
-The functions to parse and format lat/lon are removed.  They 
+The functions to parse and format lat/lon have been removed.  They 
 were not really a core function of this module.  There are other modules
 on CPAN to deal with latitude and longitude.  I also give an example of
 how to format decimal degrees as degrees, minutes, and seconds in
@@ -142,13 +142,13 @@ Society.
 It is a direct consequence of Newton's law of universal gravitation (and
 in particular the bit that states that the gravitational attraction
 between two objects varies inversely as the square of the distance
-between them) that all planets are roughly spherical.  (If they were any
-other shape gravity would tend to pull them into a sphere).  On the
-other hand, most useful surfaces for displaying large scale maps (such
-as pieces of paper or screens) are flat.  There is therefore a
-fundamental problem in making any maps of the earth that its curved
-surface being mapped must be distorted at least slightly in order to get
-it to fit onto the flat map.
+between them) that all planets are roughly spherical;  if they were any
+other shape gravity would tend to pull them into a sphere.  On the other
+hand, most useful surfaces for displaying large scale maps (such as
+pieces of paper or screens) are flat.  Therefore the fundamental problem
+in making a map of the earth is that the curved surface being mapped
+must be distorted at least slightly in order to get it to fit onto a
+flat map.
 
 This module sets out to solve the corresponding problem of converting
 latitude and longitude coordinates (designed for a spherical surface) to
@@ -159,7 +159,7 @@ Because our planet spins about a vertical axis, it tends to bulge out
 slightly in the middle, so it is more of an oblate spheroid (or
 ellipsoid) than a sphere.  This makes the arithmetic even more tedious,
 but the real problem is that the earth is not a regular ellipsoid
-either, but an irregular lump that closely resembles an ellipsoid and
+either; it is an irregular lump that closely resembles an ellipsoid and
 which is constantly (if slowly) being rearranged by plate tectonics.  So
 the best we can do is to pick an imaginary regular ellipsoid that
 provides a good fit for the region of the earth that we are interested
@@ -191,13 +191,13 @@ populated regions of the world reasonably well.
 
 =back
 
-The latitude and longitude marked on OS maps are in the OSGB36 model.
-The latitude and longitude you read from your GPS device, or from
-Wikipedia, or Google Earth are in the WGS84 model.  So the point with
-latitude 51.4778 and longitude 0 in the OSGB36 model is on the prime
-meridian line in the courtyard of the Royal Observatory in Greenwich,
-but the point with the same coordinates in the WGS84 model is about 120
-metres away to the south-east, in the park.
+The latitude and longitude marked on OS maps printed before 2015 are given in
+the OSGB36 model.  The latitude and longitude you read from your GPS device, or
+from Wikipedia, or Google Earth are in the WGS84 model.  So the point with
+latitude 51.4778 and longitude 0 in the OSGB36 model is on the prime meridian
+line in the courtyard of the Royal Observatory in Greenwich, but the point with
+the same coordinates in the WGS84 model is about 120 metres away to the
+south-east, in the park.
 
 In these modules the shape used for the projection of latitude and
 longitude onto the grid is WGS84 unless you specifically set it to use
@@ -232,12 +232,13 @@ package in the C<examples> folder.  The effect of moving the False Point
 of Origin to the far south west is to make all grid references positive.
 
 Strictly speaking, grid references are given as whole numbers of metres
-from this point, with the easting always given before the northing.  For
-everyday use however, the OSGB suggest that grid references need only to
-be given within the local 100km square as this makes the numbers
-smaller.  For this purpose they divide Britain into a series of 100km
-squares identified in pair of letters:  TQ, SU, ND, etc.  The grid of
-the big squares actually used is something like this:
+from the False Point of Origin, with the easting always given before the
+northing.  For everyday use however, the OSGB suggest that grid
+references need only to be given within the local 100km square as this
+makes the numbers smaller.  For this purpose they divide Britain into a
+series of 100km squares, each identified by a pair of letters:  TQ, SU,
+ND, etc.  The grid of the big squares actually used is something like
+this:
 
                                 HP 
                                 HU 
@@ -280,16 +281,34 @@ latitude and longitude, so the prime meridian used and the coordinates
 of the true point of origin are all defined in that system.  However as
 part of standardizing on an international GPS system, the OS have
 redefined the grid as a rubber sheet transformation from WGS84. 
-
 There is no intrinsic merit to using one model or another, but there's
 an obvious need to be consistent about which one you choose, and with
 the growing ubiquity of GPS systems, it makes sense to standardize on
-WGS84.  It is perhaps possible that future editions of OS maps will show
-WGS84 latitude and longitude along the edges instead of OSGB36.
+WGS84.  
 
-The differences between the models are only important if you are working
-at a fairly small scale.  The average differences on the ground vary
-from about -67 metres to + 124 meters depending on where you are in the
+The grid remains the primary reference system for use with maps, but
+the OS has always also printed a latitude and longitude `graticule' around the 
+edges of the large scale sheets.  Traditionally these coordinates have been 
+given in the OSGB36 model, but since 2015 the OS has been printing revised 
+editions of Explorer and Landranger sheets with WGS84 coordinates instead.
+The legend of my recently purchased copy of Explorer 311 has this paragraph under the 
+heading `The National Grid Reference System':
+
+=over 4
+
+=item * Base map constructed on Transverse Mercator Projection, Airy Ellipsoid, OSGB (1936) Datum.
+Vertical datum mean sea level. The latitude, longitude graticule overlay is on the ETRS89 datum 
+and is compatible with the WGS84 datum used by satellite navigation devices.
+
+=back
+
+If your map does not have the last sentence you can assume that it shows OSGB36
+latitude and longitude.  Of course, this change makes no difference to the grid
+itself.
+
+The differences between the OSGB36 and WGS84 models are only important if you
+are working at a fairly small scale.  The average differences on the ground
+vary from about -67 metres to + 124 meters depending on where you are in the
 country.
 
     Square                 Easting difference           Northing difference
@@ -312,7 +331,9 @@ country.
 The chart above shows the mean difference in each grid square.  A
 positive easting difference means the WGS84 Lat/Lon is to the east of
 OSGB36; a positive northing difference means it is to the north of
-OSGB36.  
+OSGB36.  At a scale of 1:50,000, 124 meters is 2.48 mm, and at 1:25,000
+it is 4.96 mm, so the difference is readily visible if you compare new 
+and old editions of the same map sheet.
 
 The transformation from WGS84 to OSGB36 is called OSTN02 and consists of
 a large data set that defines a three dimensional shift for each square

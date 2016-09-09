@@ -266,6 +266,8 @@ my %color_for = (
     A => '(224/255,36/255,114/255)', # Landranger pink
     B => '(221/255,61/255, 31/255)', # Explorer orange
     C => '(228/255, 0, 28/255)',     # Seventh series red
+    H => '(128/255, 4/255, 36/255)', # Harvey dark red
+    J => '(128/255, 4/255, 36/255)', # Harvey dark red
 );
 
 # open a tempory file for MP

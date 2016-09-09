@@ -452,6 +452,9 @@ Great Britain.
 
 2.17
 
+=for HTML <a href="https://travis-ci.org/thruston/perl-geo-coordinates-osgb">
+<img src="https://travis-ci.org/thruston/perl-geo-coordinates-osgb.svg?branch=master"></a>
+
 =head1 SYNOPSIS
 
   use Geo::Coordinates::OSGB qw(ll_to_grid grid_to_ll);
@@ -567,8 +570,8 @@ routines from L<Grid.pm|Geo::Coordinates::OSGB::Grid>.  Like this.
 C<ll_to_grid()> also takes an optional argument that sets the ellipsoid
 model to use.  This defaults to `WGS84', the name of the normal model
 for working with normal GPS coordinates, but if you want to work with
-the traditional latitude and longitude values printed on OS maps then
-you should add an optional shape parameter like this:
+the traditional latitude and longitude values printed around the edges of
+OS maps before 2015 then you should add an optional shape parameter like this:
 
     my ($e, $n) = ll_to_grid(49,-2, {shape => 'OSGB36'});
 
@@ -638,7 +641,7 @@ longitude is `WGS84' as used in the international GPS system.  This
 default it set every time that  you load the module.  If you want to
 process or produce a large number latitude and longitude coordinates in
 the British Ordnance Survey system (as printed round the edges of OS
-Landranger maps).  you can use C<< set_default_shape('OSGB36'); >> to
+Landranger and Explorer maps before 2015) you can use C<< set_default_shape('OSGB36'); >> to
 set the default shape to OSGB36.  This saves you having to add C<< {
 shape => 'OSGB36' } >> to every call of C<ll_to_grid> or C<grid_to_ll>.
 
