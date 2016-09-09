@@ -253,7 +253,7 @@ the big squares actually used is something like this:
                        SR SS ST SU TQ TR 
                     SV SW SX SY SZ TV
 
-SW covers most of Cornwall, TQ London, HU the Shetlands, and there's one
+SW covers most of Cornwall, TQ London, HU the Shetlands, and there is one
 tiny corner of a beach in Yorkshire that is in OV.  Note that it has the
 neat feature that N and S are directly above each other, so that most Sx
 squares are in the south and most Nx squares are in the north.  The
@@ -367,10 +367,10 @@ The distributed data also includes a vertical height correction as part
 of the OSGM02 geoid module, but this is not used in this module, so it
 is omitted from the table of data in order to save space.  
 
-The table of data supplied by the Orndance Survey contains 876951 rows with
-entries for each km intersection between (0,0) and (700000, 1250000).  However
+The table of data supplied by the Ordnance Survey contains 876951 rows with
+entries for each km intersection between (0,0) and (700000, 1250000).  However,
 567472 of these entries refer to places that are more than 10 km away from the
-British mainland (either in the sea or in Eire), and these are set to zero
+British mainland (either in the sea or in Eire) and these are set to zero,
 indicating that OSTN02 is not defined at these places.  In order to save more
 space, these are omitted from the beginning and end of each row in the data as
 stored in my implementation. The last 21 rows (north of Shetland) are all
