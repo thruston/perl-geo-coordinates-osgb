@@ -727,7 +727,7 @@ your input.
 
 =back
 
-If you get an expected result from any of these subroutines, please
+If you get an unexpected result from any of these subroutines, please
 generate a test case to reproduce your result and get in touch to ask me
 about it.
 
