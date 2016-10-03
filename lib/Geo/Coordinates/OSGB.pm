@@ -526,9 +526,9 @@ If you have trouble remembering the order of the arguments, or the
 returned values, note that latitude comes before longitude in the
 alphabet too, as easting comes before northing.  
 
-However since reasonable latitudes for the OSGB are in the range 49 to
+However, since reasonable latitudes for the OSGB are in the range 49 to
 61, and reasonable longitudes in the range -9 to +2, C<ll_to_grid>
-accepts argument in either order.  If your longitude is larger than your
+accepts the arguments in either order; if your longitude is larger than your
 latitude, then the values of the arguments will be silently swapped.  
 
 You can also supply the arguments as named keywords (but be sure to use
@@ -580,7 +580,7 @@ Incidentally, if you make this call above you will get back
 of the British grid.  You should get back an easting of 400000 for any
 point with longitude 2W since this is the central meridian used for the
 OSGB projection.  However you will get a slightly different value unless
-you specify C<< {shape => 'OSGB36'} >> since the WGS84 meridians are not
+you specify C<< {shape => 'OSGB36'} >> because the WGS84 meridians are not
 quite the same as OSGB36.
 
 =head3 C<grid_to_ll(e,n)>
