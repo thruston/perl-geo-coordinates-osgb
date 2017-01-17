@@ -534,23 +534,24 @@ latitude, then the values of the arguments will be silently swapped.
 You can also supply the arguments as named keywords (but be sure to use
 the curly braces so that you pass them as a reference):
 
-    my ($e,$n) = ll_to_grid( { lat => 51.5, lon => 2.1 } );
+    my ($e,$n) = ll_to_grid( { lat => 51.5, lon => -2.1 } );
 
-The easting and northing will be returned as the distance in metres from
-the `false point of origin' of the British Grid (which is a point some
-way to the south-west of the Scilly Isles).  
+The easting and northing will be returned as the orthogonal distances in metres
+from the `false point of origin' of the British Grid (which is a point some way
+to the south-west of the Scilly Isles).  The returned pair refers to a point on 
+the usual OSGB grid, which extends from the Scilly Isles in the south west to 
+the Shetlands in the north.  
 
     my ($e,$n) = ll_to_grid(51.5, -2.1); # (393154.801, 177900.605)
     my $s      = ll_to_grid(51.5, -2.1); # "393154.801 177900.605"
 
 If the coordinates you supply are in the area covered by the OSTN02
-transformation data, then the results will be rounded to 3 decimal
-places, which corresponds to the nearest millimetre.  If they are
-outside the coverage (which normally means more than a few km off shore)
-then the conversion is automagically done using a Helmert transformation
-instead of the OSTN02 data.  The results will be rounded to the nearest
-metre in this case, although you probably should not rely on the results
-being more accurate than about 5m.
+transformation data, then the results will be rounded to 3 decimal places,
+which corresponds to the nearest millimetre.  If they are outside the coverage
+(which normally means more than a few km off shore) then the conversion is
+automagically done using a Helmert transformation instead of the OSTN02 data.
+The results will be rounded to the nearest metre in this case, although you
+probably should not rely on the results being more accurate than about 5m.
 
    # A point in the sea, to the north-west of Coll
    my $s = ll_to_grid(56.75,-7); # returns "94471 773206" 
@@ -563,9 +564,10 @@ If you want the result presented in a more traditional grid reference
 format you should pass the results to one of the grid formatting
 routines from L<Grid.pm|Geo::Coordinates::OSGB::Grid>.  Like this.
 
-    $gridref = format_grid(ll_to_grid(51.5,-0.0833)); 
-    $gridref = format_grid_GPS(ll_to_grid(51.5,-0.0833)); 
-    $gridref = format_grid_map(ll_to_grid(51.5,-0.0833));
+    my $s = ll_to_grid(51.5, -2.1);              # "393154.801 177900.605"
+    $s = format_grid(ll_to_grid(51.5,-2.1));     # "ST 931 779"
+    $s = format_grid_GPS(ll_to_grid(51.5,-2.1)); # "ST 93154 77900"
+    $s = format_grid_map(ll_to_grid(51.5,-2.1)); # "ST 931 779 on A:173, B:156, C:157"
 
 C<ll_to_grid()> also takes an optional argument that sets the ellipsoid
 model to use.  This defaults to `WGS84', the name of the normal model
