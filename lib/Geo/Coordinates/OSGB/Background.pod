@@ -16,7 +16,7 @@ Scotland based on formulae and data published by the Ordnance Survey of
 Great Britain.
 
 These modules will convert accurately between an OSGB national grid
-reference and coordinates given in latitude and longitude using the
+reference, and coordinates given in latitude and longitude using the
 WGS84 model.  This means that you can take latitude and longitude
 readings from your GPS receiver, (or read them from Wikipedia, or Google
 Earth, or your car's sat-nav), and use this module to convert them to an
@@ -26,13 +26,13 @@ Ordnance Survey's paper maps.  And I<vice versa>, of course.
 These notes explain some of the background and implementation details
 that might help you get the most out of them.
 
-The algorithms and theory for these conversion routines are all from I<A
-Guide to Coordinate Systems in Great Britain> published by the OSGB,
-April 1999 (Revised Dec 2010) and available at
-http://www.ordnancesurvey.co.uk/.  You may also like to read some of the
-other introductory material there.  Should you be hoping to adapt this
-code to your own custom Mercator projection, you will find the paper
-called I<Surveying with the National GPS Network>, especially useful.
+The algorithms and theory for these conversion routines are all from I<A Guide
+to Coordinate Systems in Great Britain> published by the OSGB, April 1999
+(Revised December 2010) and available from L<the Ordnance Survey
+website|http://www.ordnancesurvey.co.uk/>.  You may also like to read some of
+the other introductory material there.  Should you be hoping to adapt this code
+to your own custom Mercator projection, you will find the paper called
+I<Surveying with the National GPS Network>, especially useful.
 
 =head2 Upgrading from V2.09 or earlier
 
@@ -167,7 +167,7 @@ in mapping.
 
 An ellipsoid model is defined by a series of numbers:  the major and
 minor semi-axes of the solid, and a ratio between them called the
-flattening. There are three ellipsoid models that are relevant to the UK:
+flattening. There are four ellipsoid models that are relevant to the UK:
 
 =over 4
 
@@ -181,13 +181,23 @@ most of the British Isles.
 =item EDM50
 
 The European standard ellipsoid is a compromise to get a good fit for
-most of Western Europe. 
+most of Western Europe.  This is not used by these modules. 
 
 =item WGS84
 
 As part of the development of the GPS network by the American military
-in the 1980s a new world-wide ellipsoid was defined. This fits most
-populated regions of the world reasonably well.
+in the 1980s a new world-wide ellipsoid called was defined.  This fits most
+populated regions of the world reasonably well. (Technically the ellipsoid is
+called GRS80, and WGS84 refers to the whole World Geodetic System that is based on it, plus 
+some very nerdy modifications, but for the purposes of this module it's just a label).
+
+=item ETRS89
+
+The European Terrestrial Reference System is also based on GRS80, and for our
+purposes is identical to WGS84.  The technical difference is that in the ETRS89
+system assumes that the Eurasian tectonic plate is the reference, whereas
+WGS84 assumes that the American plate is the reference.  But this makes no
+practical difference whatsoever for the use of these modules.
 
 =back
 
@@ -231,7 +241,7 @@ example Landranger sheet 184), or on the PDF picture supplied with this
 package in the C<examples> folder.  The effect of moving the False Point
 of Origin to the far south west is to make all grid references positive.
 
-Strictly speaking, grid references are given as whole numbers of metres
+Strictly speaking, grid references are given as the distance in metres
 from the False Point of Origin, with the easting always given before the
 northing.  For everyday use however, the OSGB suggest that grid
 references need only to be given within the local 100km square as this
@@ -255,24 +265,23 @@ this:
                     SV SW SX SY SZ TV
 
 SW covers most of Cornwall, TQ London, HU the Shetlands, and there is one
-tiny corner of a beach in Yorkshire that is in OV.  Note that it has the
+tiny corner of a beach in Yorkshire that is in OV.  The system has the
 neat feature that N and S are directly above each other, so that most Sx
 squares are in the south and most Nx squares are in the north.  The
 system logically extends far out in all directions; so square XA lies
 south of SV and ME to the west of NA and so on.  But it becomes less
 useful the further you go from the central meridian of 2W.
 
-Within each of the large squares, we only need five digit coordinates
---- from (0,0) to (99999,99999) --- to refer to a given square metre.
-However general use rarely demands such  precision, so the OSGB
-recommendation  is to use units of 100m (hectometres) so that we only
-need three digits for each easting and northing --- 000,000 to 999,999.
-If we combine the easting and northing we get the familiar traditional
-six figure grid reference.  Each of these grid references is repeated in
-each of the large 100km squares but for local use with a particular map,
-this does not usually matter.  Where it does matter, the OS suggest that
-the six figure reference is prefixed with the identifier of the large
-grid square to give a `full national grid reference', such as TQ330800.
+Within each of the large squares, we only need five-digit coordinates --- from
+(0,0) to (99999,99999) --- to refer to a given square metre.  But general use
+rarely demands such  precision, so the OSGB recommendation  is to use units of
+100m (hectometres) so that we only need three digits for each easting and
+northing --- (000,000) to (999,999).  If we combine the easting and northing we
+get the familiar traditional six figure grid reference.  Each of these grid
+references is repeated in each of the large 100km squares but this does not
+usually matter for local use with a particular map.  Where it does matter, the
+OS suggest that the six figure reference is prefixed with the identifier of the
+large grid square to give a `full national grid reference', such as TQ330800.
 This system is described in the notes in the corner of every Landranger
 1:50,000 scale map.
 
@@ -426,17 +435,15 @@ which is available from the Ordnance Survey.
 =head2 Accuracy, uncertainty, and speed
 
 This section explores the limits of accuracy and precision you can
-expect from this software.  Almost certainly, it provides more accuracy
-than you need.  
+expect from this software.  
 
 =head3 Accuracy of readings from GPS devices
 
-In particular if you are converting readings taken from your own
-handheld GPS device, the readings themselves will not be very accurate.
-To convince yourself of this, try taking your GPS on the same walk on
-different days and comparing the track: you will see that the tracks do
-not coincide.  If you have two units take them both and compare the
-tracks:  you will see that they do not coincide.
+If you are converting readings taken from your own handheld GPS device, the
+readings themselves will not be very accurate.  To convince yourself of this,
+try taking your GPS on the same walk on different days and comparing the track:
+you will see that the tracks do not coincide.  If you have two units take them
+both and compare the tracks:  you will see that they do not coincide.
 
 The accuracy of the readings you get will be affected by cloud cover,
 tree cover, the exact positions of the satellites relative to you (which
@@ -486,6 +493,7 @@ the fifth decimal place of a degree of longitude represents about
          0.001 = 60-70 m      0.001 = 1 m         0.001 = 2 cm    
         0.0001 = 6-7 m       0.0001 = 10 cm      0.0001 = 2 mm      
        0.00001 = 60-70 cm   0.00001 = 1 cm             
+      0.000001 = 6-7 cm
 
 =head3 How accurate are the conversions?
 
@@ -502,32 +510,30 @@ Translating from the given grid coordinates to WGS84 latitude and
 longitude coordinates is very slightly less accurate, but in all of
 England, Wales, Scotland and the Isle of Man this software produces
 WGS84 lat/lon coordinates from the given grid references that are within
-a few mm of the OSGB data.  
+1 mm of the OSGB data, except for points beyond 7W, as noted below.
 
 I have also run extensive `round trip' testing by generating random grid
-references, converting them to WGS84 latitude and longitude and then
-converting them back to grid easting and northing.  In all places
-between 6W and 2E (the whole of the UK mainland, plus Orkney and
-Shetland) the round trip error is less than 1 mm.  This is the design
-point of the OS formulae.  So far so good.  However, west of 6W (that is
-in the Scilly Isles and the Hebrides), the round trip error creeps up
-slowly as you go further west;  the furthest west you can go on the OS
-grid is St Kilda (at about 8.57W) and here the round trip error is about
-4 mm. As far as I can tell, this is just a limitation of the OS formulae
+references, converting them to WGS84 latitude and longitude and then converting
+them back to grid easting and northing.  In all places between 6W and 2E (the
+whole of the UK mainland, plus Orkney and Shetland) the round trip error is
+less than 1 mm.  This is the design point of the OS formulae.  So far so good.
+However, beyond of 6W (that is in the Scilly Isles and the Hebrides), the round
+trip error creeps up slowly as you go further west;  the furthest west you can
+go on the OS grid is St Kilda (at about 8.57W) and here the round trip error is
+about 4 mm. As far as I can tell, this is just a limitation of the OS formulae
 as designed in 2001 when OSTN02 was published. 
 
 Outside the area covered by OSTN02, this module uses the small Helmert
-transformation recommended by the OS.  The OS state that, with the
-parameters they provide, this transformation will be accurate up to
-about +/-5 metres, in the vicinity of the British Isles.  
+transformation recommended by the OS.  The OS state that, with the parameters
+they provide, this transformation will be accurate up to about +/-5 metres, in
+the vicinity of the British Isles.  
 
-You can also use this transformation within the OSTN02 polygon by
-calling the C<grid_to_ll_helmert> and C<ll_to_grid_helmert> routines.
-If you compare the output from these routines to the output from the
-more accurate routines that use OSTN02 you will find that the
-differences are between about -3.6 metres and +5.1 metres depending on
-where you are in the country.  In the South East both easting and
-northing are underestimated, in northern Scotland they tend to be
+You can also use this transformation within the OSTN02 polygon by calling the
+C<grid_to_ll_helmert> and C<ll_to_grid_helmert> routines.  If you compare the
+output from these routines to the output from the more accurate routines that
+use OSTN02 you will find that the differences are between about -3.6 metres and
++5.1 metres depending on where you are in the country.  In the South East both
+easting and northing are underestimated, in northern Scotland they tend to be
 overestimated.
 
 =head3 How fast are the conversions?
@@ -535,7 +541,7 @@ overestimated.
 If you can live with a 5 m level of uncertainty, then you will find that
 the Helmert routines are a bit faster at translating from grid to
 latitude and longitude.  A typical bench mark run on my development
-machine (an old Mac Mini server) using the Apple-supplied Perl 5.16
+machine (a Mac Mini server from 2011) using the Apple-supplied Perl 5.16
 gave:
 
     Subroutine          calls per sec  ms per call 
@@ -545,11 +551,21 @@ gave:
     grid_to_ll                  18131        0.055 
     grid_to_ll_helmert          35793        0.028 
 
-None of the routines is really slow, since even C<grid_to_ll> averages
-under 60 microseconds per call, but C<grid_to_ll_helmert> runs about
-twice as fast as C<grid_to_ll>.  Using a locally compiled version of
-Perl 5.22, I see a small improvement on the Helmert routines, but the
-OSTN02 routines are about the same.  `Your mileage may vary', of course.
+On my newer work machine (a MBP from 2015) using the newer Perl 5.18 supplied
+with macOS Sierra, I got slightly better numbers:
+
+    Subroutine          calls per sec  ms per call
+    ----------------------------------------------
+    ll_to_grid                  50980        0.020
+    ll_to_grid_helmert          68267        0.015
+    grid_to_ll                  25831        0.039
+    grid_to_ll_helmert          54371        0.018
+
+None of the routines is really slow, since even C<grid_to_ll> averages under 60
+microseconds per call on the older machine, but C<grid_to_ll_helmert> runs
+about twice as fast as C<grid_to_ll>.  Using a locally compiled version of Perl
+5.22, I saw a small improvement on the Helmert routines, but the OSTN02
+routines are about the same.  `Your mileage may vary', of course.
 
 The routines have been tested with various versions of Perl, including
 recent versions with the C<uselongdouble> option enabled.  On my system,
