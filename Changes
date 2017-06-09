@@ -4,6 +4,8 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Put an ':all' tag back in OSGB.pm
 
+    - Restored ability to parse a grid reference consisting of a single sheet name
+
     - Corrected pod in `build/make_maps_code`
 
     - Minor updates to documentation
@@ -11,6 +13,7 @@ Revision history for Perl extension Geo::Coordinates::OSGB
     - More rigorous accuracy test in t/06osdata.t
 
     - Added small bench mark test
+
 
 2.16 February 2016
 

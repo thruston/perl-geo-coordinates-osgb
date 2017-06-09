@@ -1,4 +1,4 @@
-# Toby Thurston -- 14 Feb 2016 
+# Toby Thurston -- 09 Jun 2017 
 # Plot a nice picture of a series of maps
 
 use strict;
@@ -14,7 +14,7 @@ use File::Temp;
 use File::Spec;
 use Carp;
 
-our $VERSION = '2.16';
+our $VERSION = '2.17';
 
 =pod
 

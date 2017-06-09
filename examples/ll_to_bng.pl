@@ -1,6 +1,6 @@
 #! /usr/bin/perl -w
 
-# Toby Thurston ---  6 May 2009
+# Toby Thurston -- 09 Jun 2017 
 # Parse LL and show as National Grid ref
 
 use strict;
@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB::Grid qw/format_grid_landranger/;
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.16';
+our $VERSION = '2.17';
 
 =pod
 
