@@ -109,7 +109,6 @@ sub _cartesian_to_llh {
     my $H   = $p / cos($phi) - $nu;
 
     return ( $lat, $lon, $H );
-
 }
 
 sub _small_Helmert_transform_for_OSGB {
@@ -233,8 +232,8 @@ sub _project_onto_grid {
     my $VI   = $nu/120 * $cp**5 * (5-18*$tp2+$tp4+14*$eta2-58*$tp2*$eta2);
 
     my $dl = $lam - ORIGIN_LONGITUDE;
-    my $north = $I + $II*$dl**2 + $III*$dl**4 + $IIIA*$dl**6;
-    my $east = ORIGIN_EASTING + $IV*$dl + $V*$dl**3 + $VI*$dl**5;
+    my $north =            $I + ( $II + ( $III + $IIIA * $dl * $dl ) * $dl * $dl ) * $dl * $dl;
+    my $east = ORIGIN_EASTING + ( $IV + ( $V   + $VI   * $dl * $dl ) * $dl * $dl ) * $dl;
 
     return ($east, $north);
 }
@@ -295,6 +294,7 @@ sub _get_ostn_pair_reference {
     return if $index + 12 > length $ostn_data[$y];
 
     my @shifts = map { _d32 } unpack "x[$index]A3A3A3A3", $ostn_data[$y];
+    # ie skip the first $index characters, then unpack four 3-letter strings
 
     return if 0 == $shifts[0];
     return if 0 == $shifts[1];
@@ -368,19 +368,20 @@ sub grid_to_ll_helmert {
 
 sub _reverse_project_onto_ellipsoid {
 
-    my ($easting, $northing, $shape) = @_;
+    my ( $easting, $northing, $shape ) = @_;
 
-    my ($a,$b,$f,$e2) = @{ ELLIPSOIDS->{$shape} };
+    my ( $a, $b, $f, $e2 ) = @{ ELLIPSOIDS->{$shape} };
 
-    my $n = ($a-$b)/($a+$b);
+    my $n = ( $a - $b ) / ( $a + $b );
     my $af = $a * CONVERGENCE_FACTOR;
 
     my $dn = $northing - ORIGIN_NORTHING;
     my $de = $easting - ORIGIN_EASTING;
 
-    my ($phi, $lam, $M, $p_plus, $p_minus);
-    $phi = ORIGIN_LATITUDE + $dn/$af;
+    my $phi = ORIGIN_LATITUDE + $dn/$af;
+    my $lam = ORIGIN_LONGITUDE; 
 
+    my ($M, $p_plus, $p_minus);
     while (1) {
         $p_plus  = $phi + ORIGIN_LATITUDE;
         $p_minus = $phi - ORIGIN_LATITUDE;
@@ -394,40 +395,29 @@ sub _reverse_project_onto_ellipsoid {
         $phi = $phi + ($dn-$M)/$af;
     }
 
-    my $cp = cos $phi; my $sp = sin $phi;
-    my $sp2 = $sp*$sp;
-    my $tp  = $sp/$cp; # cos phi cannot be zero in GB
-    my $tp2 = $tp*$tp;
-    my $tp4 = $tp2*$tp2;
-    my $tp6 = $tp4*$tp2 ;
+    my $cp = cos $phi; 
+    my $sp = sin $phi; 
+    my $tp  = $sp / $cp; # cos phi cannot be zero in GB
 
-    my $splat = 1 - $e2 * $sp2;
+    my $splat = 1 - $e2 * $sp * $sp;
     my $sqrtsplat = sqrt $splat;
     my $nu  = $af / $sqrtsplat;
-    my $rho = $af * (1 - $e2) / ($splat*$sqrtsplat);
-    my $eta2 = $nu/$rho - 1;
+    my $rho = $af * (1 - $e2) / ( $splat * $sqrtsplat );
+    my $eta2 = $nu / $rho - 1;
 
-    my $VII  = $tp /   (2*$rho*$nu);
-    my $VIII = $tp /  (24*$rho*$nu**3) *  (5 +  3*$tp2 + $eta2 - 9*$tp2*$eta2);
-    my $IX   = $tp / (720*$rho*$nu**5) * (61 + 90*$tp2 + 45*$tp4);
+    my $VII  = $tp / (2 * $rho * $nu);
+    my $VIII = $tp / (24 * $rho * $nu**3) * (5 + $eta2 + ( 3 - 9 * $eta2 ) * $tp * $tp );
+    my $IX   = $tp / (720 * $rho * $nu**5) * (61 + ( 90 + 45 * $tp * $tp ) * $tp * $tp );
 
     my $secp = 1/$cp;
 
-    my $X    = $secp/$nu;
-    my $XI   = $secp/(   6*$nu**3)*($nu/$rho + 2*$tp2);
-    my $XII  = $secp/( 120*$nu**5)*(      5 + 28*$tp2 +   24*$tp4);
-    my $XIIA = $secp/(5040*$nu**7)*(    61 + 662*$tp2 + 1320*$tp4 + 720*$tp6);
+    my $X    = $secp / $nu;
+    my $XI   = $secp / (    6 * $nu**3 ) * ( $nu / $rho + 2 * $tp * $tp );
+    my $XII  = $secp / (  120 * $nu**5 ) * ( 5 + ( 28 + 24 * $tp * $tp ) * $tp * $tp );
+    my $XIIA = $secp / ( 5040 * $nu**7 ) * ( 61 + ( 662 + ( 1320 + 720 * $tp * $tp ) * $tp * $tp ) * $tp * $tp );
 
-    $phi = $phi
-         - $VII *$de*$de
-         + $VIII*$de*$de*$de*$de
-         - $IX  *$de*$de*$de*$de*$de*$de;
-
-    $lam = ORIGIN_LONGITUDE
-         + $X   *$de
-         - $XI  *$de*$de*$de
-         + $XII *$de*$de*$de*$de*$de
-         - $XIIA*$de*$de*$de*$de*$de*$de*$de;
+    $phi = $phi +        ( -$VII + ( $VIII - $IX * $de * $de ) * $de * $de) * $de * $de;
+    $lam = $lam + ( $X + ( -$XI + ( $XII - $XIIA * $de * $de ) * $de * $de) * $de * $de) * $de;
 
     # now put into degrees & return
     return ($phi * 57.29577951308232087679815481410517,

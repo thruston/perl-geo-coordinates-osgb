@@ -1,3 +1,4 @@
+#! /usr/bin/env perl
 # Toby Thurston -- 04 Jun 2017 
 
 # Bench mark the conversion routines
