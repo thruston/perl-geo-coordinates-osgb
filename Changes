@@ -6,6 +6,8 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Minor refactoring to obey more of perl-critic and perl-tidy
 
+    - Fixed version numbers and date marks
+
 2.17 June 2017
 
     - Put an ':all' tag back in OSGB.pm
@@ -19,7 +21,6 @@ Revision history for Perl extension Geo::Coordinates::OSGB
     - More rigorous accuracy test in t/06osdata.t
 
     - Added small bench mark test
-
 
 2.16 February 2016
 

@@ -786,7 +786,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 =head1 AUTHOR
 
-Toby Thurston -- 12 Jun 2017
+Toby Thurston -- 20 Jun 2017
 
 toby@cpan.org
 
