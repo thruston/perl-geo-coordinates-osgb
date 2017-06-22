@@ -250,11 +250,22 @@ sub _find_OSTN02_shifts_at {
 
     return if $n_index+1 > $#ostn_data;
 
-    my $lo_pair_ref = _get_ostn_pair_reference($e_index, $n_index)   or return;
-    my $hi_pair_ref = _get_ostn_pair_reference($e_index, $n_index+1) or return;
+    my $row_size = 701;
+    my $key = $e_index + $row_size * $n_index;
+    if ( ! exists $ostn_shifts_for{$key} ) {
+        $ostn_shifts_for{$key} = _get_ostn_pair_reference($e_index, $n_index);
+    }
+    return if ! $ostn_shifts_for{$key};
 
-    my ($se0,$sn0,$se1,$sn1) = @$lo_pair_ref;
-    my ($se2,$sn2,$se3,$sn3) = @$hi_pair_ref;
+    my ($se0,$sn0,$se1,$sn1) = @{$ostn_shifts_for{$key}};
+
+    $key += $row_size;
+    if ( ! exists $ostn_shifts_for{$key} ) {
+        $ostn_shifts_for{$key} = _get_ostn_pair_reference($e_index, $n_index+1);
+    }
+    return if ! $ostn_shifts_for{$key};
+    
+    my ($se2,$sn2,$se3,$sn3) = @{$ostn_shifts_for{$key}};
 
     my $t = $x/1000 - $e_index; # offset within square
     my $u = $y/1000 - $n_index;
@@ -280,14 +291,8 @@ sub _d32 {
 sub _get_ostn_pair_reference {
     my $x = shift;
     my $y = shift;
-    my $k = $x+701*$y;
-
-    if ( exists $ostn_shifts_for{$k} ) {
-        return $ostn_shifts_for{$k}
-    }
 
     my $leading_zeros = substr $ostn_data[$y], 0, 3;
-
     return if $x < $leading_zeros;
 
     my $index = 3 + 6*($x-$leading_zeros);
@@ -306,7 +311,7 @@ sub _get_ostn_pair_reference {
     $shifts[2] += MIN_X_SHIFT;
     $shifts[3] += MIN_Y_SHIFT;
 
-    return $ostn_shifts_for{$k} = [ map { $_ / 1000 } @shifts ];
+    return [ map { $_ / 1000 } @shifts ];
 }
 
 sub grid_to_ll {
