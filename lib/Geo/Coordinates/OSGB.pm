@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008;    # at least Perl 5.08 please
 
-our $VERSION = '2.18';
+our $VERSION = '2.19';
 
 our %EXPORT_TAGS = (
     all => [
@@ -295,16 +295,13 @@ sub _get_ostn_pair_reference {
     my $leading_zeros = substr $ostn_data[$y], 0, 3;
     return if $x < $leading_zeros;
 
-    my $index = 3 + 6*($x-$leading_zeros);
-    return if $index + 12 > length $ostn_data[$y];
+    my $start = 3 + 6 * ( $x - $leading_zeros );
+    return if $start + 12 > length $ostn_data[$y];
 
-    my @shifts = map { _d32 } unpack "x[$index]A3A3A3A3", $ostn_data[$y];
-    # ie skip the first $index characters, then unpack four 3-letter strings
+    my $data = substr $ostn_data[$y], $start, 12;
+    return if -1 < index $data, '000';
 
-    return if 0 == $shifts[0]; # stored shifts are adjusted so that they are all > 0
-    return if 0 == $shifts[1]; # so 0 means "undefined"
-    return if 0 == $shifts[2];
-    return if 0 == $shifts[3];
+    my @shifts = map { _d32 } unpack "A3A3A3A3", $data;
 
     $shifts[0] += MIN_X_SHIFT;
     $shifts[1] += MIN_Y_SHIFT;
@@ -442,7 +439,7 @@ based on formulae and data published by the Ordnance Survey of Great Britain.
 
 =head1 VERSION
 
-2.18
+2.19
 
 =for HTML <a href="https://travis-ci.org/thruston/perl-geo-coordinates-osgb">
 <img src="https://travis-ci.org/thruston/perl-geo-coordinates-osgb.svg?branch=master"></a>
@@ -806,7 +803,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 =head1 AUTHOR
 
-Toby Thurston -- 20 Jun 2017
+Toby Thurston -- 27 Jun 2017
 
 toby@cpan.org
 

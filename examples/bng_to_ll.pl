@@ -12,7 +12,7 @@ use Geo::Coordinates::OSGB::Grid qw/parse_grid format_grid_landranger/;
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.18';
+our $VERSION = '2.19';
 
 =pod
 
@@ -78,7 +78,7 @@ is included.  This might be useful in other applications.
 
 =head1 AUTHOR
 
-Toby Thurston -- 20 Jun 2017
+Toby Thurston -- 27 Jun 2017
 
 toby@cpan.org
 

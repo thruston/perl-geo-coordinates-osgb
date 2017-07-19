@@ -13,7 +13,7 @@ use Browser::Open qw(open_browser);
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.18';
+our $VERSION = '2.19';
 
 sub format_grid_streetmap {
     my $e = shift;
@@ -90,7 +90,7 @@ You may need to install L<Browser::Open>.
 
 =head1 AUTHOR
 
-Toby Thurston -- 20 Jun 2017
+Toby Thurston -- 27 Jun 2017
 
 toby@cpan.org
 
