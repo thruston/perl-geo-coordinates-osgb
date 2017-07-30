@@ -782,7 +782,7 @@ None known.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2002-2016 Toby Thurston
+Copyright (C) 2002-2017 Toby Thurston
 
 OSTN02 transformation data included in this module is freely available
 from the Ordnance Survey but remains Crown Copyright (C) 2002
@@ -803,7 +803,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 =head1 AUTHOR
 
-Toby Thurston -- 27 Jun 2017
+Toby Thurston -- 30 Jul 2017
 
 toby@cpan.org
 

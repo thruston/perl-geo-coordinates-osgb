@@ -175,7 +175,7 @@ This is easy on OSX or Linux. On Windows these functions are also provided by Mi
 
 =head1 AUTHOR
 
-Toby Thurston -- 27 Jun 2017
+Toby Thurston -- 30 Jul 2017
 
 toby@cpan.org
 

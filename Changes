@@ -1,14 +1,14 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
-2.19 July 2019
+2.19 July 2017
 
     - Go faster stripes on main conversion routines
 
-    - Extra options on conversion examples
+    - Replaced three of the example scripts with a new single multifunction example script 
 
-2.18 June 2018
+2.18 June 2017
 
-    - Fix small bug in Grid.pm: removed recent use of "//=", so that the module still works with Perl 5.08
+    - Fix small bug in Grid.pm: removed recent use of "//=", so that the module still works with Perl 5.8
 
     - Minor refactoring to obey more of perl-critic and perl-tidy
 

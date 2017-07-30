@@ -125,8 +125,7 @@ The functions to parse and format lat/lon have been removed.  They
 were not really a core function of this module.  There are other modules
 on CPAN to deal with latitude and longitude.  I also give an example of
 how to format decimal degrees as degrees, minutes, and seconds in
-C<examples/bng_to_ll.pl>.
-
+C<examples/bngl.pl>.
 
 =back
 
