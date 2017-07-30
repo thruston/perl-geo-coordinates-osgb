@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008;    # at least Perl 5.08 please
 
-our $VERSION = '2.18';
+our $VERSION = '2.19';
 
 our %EXPORT_TAGS = (
     all => [
@@ -250,11 +250,22 @@ sub _find_OSTN02_shifts_at {
 
     return if $n_index+1 > $#ostn_data;
 
-    my $lo_pair_ref = _get_ostn_pair_reference($e_index, $n_index)   or return;
-    my $hi_pair_ref = _get_ostn_pair_reference($e_index, $n_index+1) or return;
+    my $row_size = 701;
+    my $key = $e_index + $row_size * $n_index;
+    if ( ! exists $ostn_shifts_for{$key} ) {
+        $ostn_shifts_for{$key} = _get_ostn_pair_reference($e_index, $n_index);
+    }
+    return if ! $ostn_shifts_for{$key};
 
-    my ($se0,$sn0,$se1,$sn1) = @$lo_pair_ref;
-    my ($se2,$sn2,$se3,$sn3) = @$hi_pair_ref;
+    my ($se0,$sn0,$se1,$sn1) = @{$ostn_shifts_for{$key}};
+
+    $key += $row_size;
+    if ( ! exists $ostn_shifts_for{$key} ) {
+        $ostn_shifts_for{$key} = _get_ostn_pair_reference($e_index, $n_index+1);
+    }
+    return if ! $ostn_shifts_for{$key};
+    
+    my ($se2,$sn2,$se3,$sn3) = @{$ostn_shifts_for{$key}};
 
     my $t = $x/1000 - $e_index; # offset within square
     my $u = $y/1000 - $n_index;
@@ -280,33 +291,24 @@ sub _d32 {
 sub _get_ostn_pair_reference {
     my $x = shift;
     my $y = shift;
-    my $k = $x+701*$y;
-
-    if ( exists $ostn_shifts_for{$k} ) {
-        return $ostn_shifts_for{$k}
-    }
 
     my $leading_zeros = substr $ostn_data[$y], 0, 3;
-
     return if $x < $leading_zeros;
 
-    my $index = 3 + 6*($x-$leading_zeros);
-    return if $index + 12 > length $ostn_data[$y];
+    my $start = 3 + 6 * ( $x - $leading_zeros );
+    return if $start + 12 > length $ostn_data[$y];
 
-    my @shifts = map { _d32 } unpack "x[$index]A3A3A3A3", $ostn_data[$y];
-    # ie skip the first $index characters, then unpack four 3-letter strings
+    my $data = substr $ostn_data[$y], $start, 12;
+    return if -1 < index $data, '000';
 
-    return if 0 == $shifts[0]; # stored shifts are adjusted so that they are all > 0
-    return if 0 == $shifts[1]; # so 0 means "undefined"
-    return if 0 == $shifts[2];
-    return if 0 == $shifts[3];
+    my @shifts = map { _d32 } unpack "A3A3A3A3", $data;
 
     $shifts[0] += MIN_X_SHIFT;
     $shifts[1] += MIN_Y_SHIFT;
     $shifts[2] += MIN_X_SHIFT;
     $shifts[3] += MIN_Y_SHIFT;
 
-    return $ostn_shifts_for{$k} = [ map { $_ / 1000 } @shifts ];
+    return [ map { $_ / 1000 } @shifts ];
 }
 
 sub grid_to_ll {
@@ -437,7 +439,7 @@ based on formulae and data published by the Ordnance Survey of Great Britain.
 
 =head1 VERSION
 
-2.18
+2.19
 
 =for HTML <a href="https://travis-ci.org/thruston/perl-geo-coordinates-osgb">
 <img src="https://travis-ci.org/thruston/perl-geo-coordinates-osgb.svg?branch=master"></a>
@@ -780,7 +782,7 @@ None known.
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 2002-2016 Toby Thurston
+Copyright (C) 2002-2017 Toby Thurston
 
 OSTN02 transformation data included in this module is freely available
 from the Ordnance Survey but remains Crown Copyright (C) 2002
@@ -801,7 +803,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 =head1 AUTHOR
 
-Toby Thurston -- 20 Jun 2017
+Toby Thurston -- 30 Jul 2017
 
 toby@cpan.org
 

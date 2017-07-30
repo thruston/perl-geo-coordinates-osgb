@@ -6,7 +6,7 @@ use Cwd;
 use Getopt::Long;
 use Pod::Usage;
 
-our $VERSION = '2.18';
+our $VERSION = '2.19';
 
 =pod
 
@@ -36,7 +36,7 @@ Any existing file will be overwritten.
 
 =head1 AUTHOR 
 
-Toby Thurston -- 20 Jun 2017
+Toby Thurston -- 30 Jul 2017
 
 =cut
 
