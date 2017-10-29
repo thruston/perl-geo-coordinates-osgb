@@ -42,11 +42,11 @@ is( sprintf("%g %g", grid_to_ll({e => 217380, n => 896060})), "57.9167 -5.08333"
 # switch back to WGS84
 set_default_shape('WGS84');
 
-is(ll_to_grid(51.3,  0),  "539524.823 157551.911", "Somewhere in London");
+is(ll_to_grid(51.3,  0),  "539524.839 157551.929", "Somewhere in London");
 is(ll_to_grid(51.3,-10),  "-157250 186110",        "Far west");
 is(ll_to_grid(61.3,  0),  "507242 1270342",        "Far north");
-is(ll_to_grid(56.75,-7),  "94471 773206",          "In sea north-west of Coll");
-is(ll_to_grid(51.5, -2.1), "393154.801 177900.605", 'Example from docs');
+is(ll_to_grid(56.75,-7),  "94469.597 773209.464",          "In sea north-west of Coll");
+is(ll_to_grid(51.5, -2.1), "393154.807 177900.595", 'Example from docs');
 
 # Finally some more round trips 
 
