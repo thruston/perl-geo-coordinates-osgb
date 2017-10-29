@@ -35,8 +35,8 @@ is(ll_to_grid(56+55/60, -5.25 ), "202190.386 785279.519",  "Meall a Phubuill");
 is( sprintf("%g %g", grid_to_ll(197575,794790)), "57 -5.3333", "Glendessary");
 is( sprintf("%g %g", grid_to_ll(269995, 68361)), "50.5 -3.83333", "Scorriton");
 is( sprintf("%g %g", grid_to_ll(400000,122350)), "51 -2", "Cranbourne Chase");
-is( sprintf("%g %g", grid_to_ll(323223,1004000)), "58.9168 -3.33333", "Hoy");
-is( sprintf("%g %g", grid_to_ll(217380,896060)), "57.9167 -5.08333", "Glen Achcall");
+is( sprintf("%11.8f %10.7f", grid_to_ll(323223,1004000)), "58.91680150 -3.3333320", "Hoy");
+is( sprintf("%11.8f %10.7f", grid_to_ll(217380,896060)), "57.91671633 -5.0833302", "Glen Achcall");
 is( sprintf("%g %g", grid_to_ll({e => 217380, n => 896060})), "57.9167 -5.08333", "Keyword arguments for Glen Achcall");
 
 # switch back to WGS84

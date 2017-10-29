@@ -14,7 +14,7 @@ use File::Temp;
 use File::Spec;
 use Carp;
 
-our $VERSION = '2.19';
+our $VERSION = '2.20';
 
 =pod
 

@@ -6,7 +6,7 @@ Geo::Coordinates::OSGB::Background - Background and extended description
 
 =head1 VERSION
 
-2.19
+2.20
 
 =head1 DESCRIPTION
 
@@ -544,19 +544,21 @@ put considerable effort into making this faster since about version 2.08 of this
 now the accurate routines the use the OSTN02 data are pretty much the same as the approximate 
 routines.  
 
-The tests are probably rather generous to my code because of the caching effect.
-In order to speed up the OSTN02 data lookups, the routines keep a cache of the data 
-fetched, so that if you convert a sequence of coordinates in the same square km, the second
-and subsequent lookups will get the data from a local hash instead of having to read the 
-table.  The benchmark test (using the standard Benchmark.pm approach) consists of getting
-Perl to run as many conversions as possible 
-for about 5 CPU seconds, and as a result the cache hit ratio is probably rather exaggerated.
-Nevertheless this might still be reasonably representative if you are converting, say, the steps 
-in a GPX track, where successive steps are highly likely to be the same square km as the one before.
+The tests are probably rather generous to my code because of the caching
+effect.  In order to speed up the OSTN02 data lookups, the routines keep a
+cache of the data fetched, so that if you convert a sequence of coordinates in
+the same square km, the second and subsequent lookups will get the data from a
+local hash instead of having to read the table.  The benchmark test (using the
+standard Benchmark.pm approach) consists of getting Perl to run as many
+conversions as possible for about 5 CPU seconds, and as a result the cache hit
+ratio is probably rather exaggerated.  Nevertheless this might still be
+reasonably representative if you are converting, say, the steps in a GPX track,
+where successive steps are highly likely to be the same square km as the one
+before.
 
-Last year (2016) with version 2.16 of this module, a typical bench mark run on my development
-machine (a Mac Mini server from 2011) using the Apple-supplied Perl 5.16
-gave:
+Last year (2016) with version 2.16 of this module, a typical bench mark run on
+my development machine (a Mac Mini server from 2011) using the Apple-supplied
+Perl 5.16 gave:
 
     Subroutine          calls per sec  ms per call 
     ----------------------------------------------

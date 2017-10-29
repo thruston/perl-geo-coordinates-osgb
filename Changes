@@ -1,5 +1,9 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
+2.20 November 2017
+
+    - Replaced OSTN02 data set with OSTN15, the new OSGB standard
+
 2.19 July 2017
 
     - Go faster stripes on main conversion routines

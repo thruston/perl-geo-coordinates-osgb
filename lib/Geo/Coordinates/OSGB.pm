@@ -5,7 +5,7 @@ use warnings;
 use Carp;
 use 5.008;    # at least Perl 5.08 please
 
-our $VERSION = '2.19';
+our $VERSION = '2.20';
 
 our %EXPORT_TAGS = (
     all => [
@@ -439,7 +439,7 @@ based on formulae and data published by the Ordnance Survey of Great Britain.
 
 =head1 VERSION
 
-2.19
+2.20
 
 =for HTML <a href="https://travis-ci.org/thruston/perl-geo-coordinates-osgb">
 <img src="https://travis-ci.org/thruston/perl-geo-coordinates-osgb.svg?branch=master"></a>
