@@ -415,10 +415,10 @@ based on formulae and data published by the Ordnance Survey of Great Britain.
 
 =head1 DESCRIPTION
 
-These modules convert accurately between an OSGB national grid reference and
+These modules convert accurately between OSGB national grid references and
 coordinates given in latitude and longitude.
 
-In version 2.10 and above, the default ellipsoid model used is the I<de facto>
+The default "ellipsoid model" used for the conversions is the I<de facto>
 international standard WGS84.  This means that you can take latitude and
 longitude readings from your GPS receiver, or read them from Wikipedia, or
 Google Earth, or your car's sat-nav, and use this module to convert them to
@@ -444,30 +444,31 @@ Ireland.
 The following functions can be exported from the
 C<Geo::Coordinates::OSGB> module:
 
-    grid_to_ll ll_to_grid
+    grid_to_ll 
+    ll_to_grid
 
 Neither of these is exported by default.
 
 =head2 Main subroutines
 
-=head3 C<ll_to_grid(lat,lon)>
+=head3 C<ll_to_grid(lat, lon)>
 
 C<ll_to_grid> translates a latitude and longitude pair into a grid
 easting and northing pair.
 
 When called in a list context, C<ll_to_grid> returns the easting and
 northing as a list of two.  When called in a scalar context, it returns
-a single string with the numbers separated by spaces.
+a single string with the numbers separated by a space.
 
 The arguments should be supplied as real numbers representing
-decimal degrees, like this
+decimal degrees, like this:
 
     my ($e,$n) = ll_to_grid(51.5, -2.1); # (393154.801, 177900.605)
 
 Following the normal mathematical convention, positive arguments mean North or
 East, negative South or West.
 
-If you have data with degrees, minutes and seconds, you can convert them
+If you have data with degrees, minutes, and seconds, you can convert them
 to decimals like this:
 
     my ($e,$n) = ll_to_grid(51+25/60, 0-5/60-2/3600);
@@ -502,7 +503,7 @@ instead of the OSTN data.  The results will be rounded to the nearest metre
 in this case, although you probably should not rely on the results being more
 accurate than about 5m.
 
-With the older OSTN02 dataset coverage extended only to about 3km offshore, 
+With the older OSTN02 dataset, coverage extended only to about 3km offshore, 
 but the current OSTN15 dataset extends coverage to the whole grid area 
 from (0,0) to (700000, 1250000), so you have be really far away to get 
 whole metres.  Even points well away from land, like this one:
@@ -510,9 +511,9 @@ whole metres.  Even points well away from land, like this one:
    # A point in the sea, to the north-west of Coll
    my $s = ll_to_grid(56.75,-7);
 
-will get an accurate conversion.  With OSTN02 that returned "94471 773206"
-but with OSTN15 you get "94469.597 773209.464".  For your sake, I hope you are
-never in a situation off Coll where the 3 metres difference is important.
+will get an accurate conversion.  With OSTN02 that returned C<94471 773206>
+but with OSTN15 you get C<94469.597 773209.464>.  For your sake, I hope you are
+never in a situation at sea off Coll where the 3 metres difference is important.
 
 The numbers returned may be negative if your latitude and longitude are
 far enough south and west, but beware that the transformation is less
@@ -536,7 +537,7 @@ OS maps before 2015 then you should add an optional shape parameter like this:
     my ($e, $n) = ll_to_grid(49,-2, {shape => 'OSGB36'});
 
 Incidentally, if you make this call above you will get back
-(400000,-100000) which are the coordinates of the `true point of origin'
+C<(400000, -100000)> which are the coordinates of the `true point of origin'
 of the British grid.  You should get back an easting of 400000 for any
 point with longitude 2W since this is the central meridian used for the
 OSGB projection.  However you will get a slightly different value unless
@@ -598,7 +599,7 @@ that:
 
 The default ellipsoid shape used for conversion to and from latitude and
 longitude is `WGS84' as used in the international GPS system.  This
-default it set every time that  you load the module.  If you want to
+default is set every time that  you load the module.  If you want to
 process or produce a large number latitude and longitude coordinates in
 the British Ordnance Survey system (as printed round the edges of OS
 Landranger and Explorer maps before 2015) you can use C<< set_default_shape('OSGB36'); >> to

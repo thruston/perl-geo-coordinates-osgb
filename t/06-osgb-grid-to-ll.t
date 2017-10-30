@@ -98,6 +98,9 @@ for my $input_line (@test_input) {
     my $dlon = abs($got_lon - $lon);
     my $hundredth_mm_latitude = 1/1100000000;  
     my $hundredth_mm_longitude = 1/650000000;   
+    my $lat_err_mm = sprintf "%.3f", $dlat * 110000000;
+    my $lon_err_mm = sprintf "%.3f", $dlon *  65000000;
+    print "$id $lon $lat -> $dlon $dlat -> $lon_err_mm $lat_err_mm\n";
     cmp_ok($dlat, '<', $hundredth_mm_latitude, "$id Latitude");
     cmp_ok($dlon, '<', $hundredth_mm_longitude, "$id Longitude");
 }

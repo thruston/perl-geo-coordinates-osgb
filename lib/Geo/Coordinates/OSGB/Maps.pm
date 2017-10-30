@@ -1155,7 +1155,7 @@ Geo::Coordinates::OSGB::Maps - Data for OSGB Maps
 
 =head1 VERSION
 
-V2.19
+V2.20
 
 =head1 SUBROUTINES AND METHODS
 

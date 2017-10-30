@@ -473,8 +473,8 @@ context depending on how many map numbers are in the list of sheets.
 
 =head2 C<parse_grid>
 
-The C<parse_grid> routine extracts a (easting, northing) pair from a
-string, or a list of arguments, representing a grid reference.  The pair
+The C<parse_grid> routine extracts an (easting, northing) pair from a
+string or a list of arguments representing a grid reference.  The pair
 returned are in units of metres from the false origin of the grid, so
 that you can pass them to C<format_grid> or C<grid_to_ll>.
 

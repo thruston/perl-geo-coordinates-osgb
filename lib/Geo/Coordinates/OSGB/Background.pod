@@ -185,7 +185,7 @@ most of Western Europe.  This is not used by these modules.
 =item WGS84
 
 As part of the development of the GPS network by the American military
-in the 1980s a new world-wide ellipsoid called was defined.  This fits most
+in the 1980s a new world-wide ellipsoid called WGS84 was defined.  This fits most
 populated regions of the world reasonably well. (Technically the ellipsoid is
 called GRS80, and WGS84 refers to the whole World Geodetic System that is based on it, plus 
 some very nerdy modifications, but for the purposes of this module it's just a label).
@@ -497,31 +497,31 @@ the fifth decimal place of a degree of longitude represents about
 
 The OS supply test data with OSTN15 that comes from various fixed
 stations around the country and that form part of the definition of the
-transformation.  If you look in the test file C<06osdata.t> you can see
+transformation.  If you look in the test files C<06-osgb-*.t> you can see
 how it is used for testing these modules.
 
 In all cases translating from the WGS84 coordinates to the national grid
+and vice versa
 is accurate to the millimetre, so these modules are at least as accurate
 as the OSGB software that produced the test data.
 
+The main difference between the OSTN02 transformation and OSTN15 
+is that the model fits the whole grid area better.  With OSTN02 the 
+conversions were (very slightly) less accurate for places west of 7W.
 Translating from the given grid coordinates to WGS84 latitude and
-longitude coordinates is very slightly less accurate, but in all of
-England, Wales, Scotland and the Isle of Man this software produces
-WGS84 lat/lon coordinates from the given grid references that are within
-1 mm of the OSGB data, except for points beyond 7W, as noted below.
-
-I have also run extensive `round trip' testing by generating random grid
+longitude coordinates was accurate to 1mm for all of 
+England, Wales, Scotland and the Isle of Man, but 
+`round trip' testing (by generating random grid
 references, converting them to WGS84 latitude and longitude and then converting
-them back to grid easting and northing.  In all places between 6W and 2E (the
-whole of the UK mainland, plus Orkney and Shetland) the round trip error is
-less than 1 mm.  This is the design point of the OS formulae.  So far so good.
-However, beyond of 6W (that is in the Scilly Isles and the Hebrides), the round
-trip error creeps up slowly as you go further west;  the furthest west you can
-go on the OS grid is St Kilda (at about 8.57W) and here the round trip error is
-about 4 mm. As far as I can tell, this is just a limitation of the OS formulae
-as designed in 2001 when OSTN was first published. 
+them back to grid easting and northing), showed 
+that beyond of 6W (that is in the Scilly Isles and the Hebrides), the
+error creeps up to about 4mm if you go as far as St Kilda (at about 8.57W).
+The new OSTN15 numbers are all very slightly different, so that converting any given latitude 
+and longitude in WGS84 gives a grid reference that may be a few mm different.  But OSTN15
+no longer shows greater round trip errors in the far west. The accuracy of round trip conversions 
+is less than 1mm for all of the OSGB test points in both directions.
 
-Outside the area covered by OSTN15, this module uses the small Helmert
+Outside the rectangle covered by OSTN15, this module uses the small Helmert
 transformation recommended by the OS.  The OS state that, with the parameters
 they provide, this transformation will be accurate up to about +/-5 metres, in
 the vicinity of the British Isles.  
@@ -541,7 +541,7 @@ you have read this far you might be interested in the results of my benchmarking
 The slowest part of these routines used to be the loading of the OSTN15 data set but I have 
 put considerable effort into making this faster since about version 2.08 of this module, so that
 now the accurate routines the use the OSTN15 data are pretty much the same as the approximate 
-routines.  
+routines (C<ll_to_grid> is slightly faster, C<grid_to_ll> is slightly slower).
 
 The tests used to be a bit generous to my code because of the caching
 effect.  In order to speed up the OSTN data lookups, the routines used to keep a
@@ -606,7 +606,7 @@ grid conversions.
 
 It is always going to be slightly slower converting from grid to ll, due to the
 iterative nature of the algorithm that is built into OSTN15.  So the
-approximate routine is likely to remain a fair bit faster.  Having said that
+approximate routine is likely to remain slightly faster.  Having said that
 none of the routines is really slow, since even C<grid_to_ll> averages under 60
 microseconds per call on the older machine.  `Your mileage may vary', of
 course.
