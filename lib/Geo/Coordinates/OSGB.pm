@@ -264,14 +264,13 @@ sub _find_OSTN_shifts_at {
     my $uln = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701 + 701])/1000;
     my $urn = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701 + 702])/1000;
 
-    my $t = ($easting / 1000) % 1;
-    my $u = ($northing / 1000) % 1;
+    my $t = ($easting / 1000) - $east_km;
+    my $u = ($northing / 1000) - $north_km;
 
     return (
         (1-$t) * (1-$u) * $lle + $t * (1-$u) * $lre + (1-$t) * $u * $ule + $t * $u * $ure,
         (1-$t) * (1-$u) * $lln + $t * (1-$u) * $lrn + (1-$t) * $u * $uln + $t * $u * $urn
     );
-
 }
 
 sub grid_to_ll {
