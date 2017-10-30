@@ -158,12 +158,12 @@ my $model = $use_osgb ? 'OSGB36' : 'WGS84';
 
 my @input;
 
-if ( is_interactive() ) {
-    if (!@ARGV) {
-        @input = random_grid();
+if ( is_interactive(*STDIN) ) {
+    if (@ARGV) {
+        @input = clean_args(@ARGV);
     }
     else {
-        @input = clean_args(@ARGV);
+        @input = random_grid();
     }
 }
 else {
@@ -189,13 +189,13 @@ if ($show_streetmap) {
     open_browser(format_grid_streetmap($e, $n));
 }
 
-if ( is_interactive() ) {
+if ( is_interactive(*STDOUT) ) {
     printf "Your input: %s, model: $model\n", @ARGV ? "@ARGV" : "(random)";
     printf "Gridref: %s %s == %s\n", $e, $n, scalar format_grid_landranger($e, $n);
     print format_ll_nicely($lat, $lon), "\n";
 }
 else {
-    print "@out";
+    print "@out\n";
 }
 
 
