@@ -1,117 +1,36 @@
-#! /usr/bin/env perl
-use warnings;
+#! /usr/bin/perl -w
+
+# Toby Thurston -- 25 Oct 2017 
+
 use strict;
-use File::Spec;
-use Cwd;
-use Getopt::Long;
-use Pod::Usage;
+use warnings;
+use List::Util qw/min max/;
 
-our $VERSION = '2.20';
-
-=pod
-
-=head1 NAME
-
-pack_ostn_data - [not for users] re-create the OSTN data for OSGB.pm
-
-Run this from the root of the distribution.  Default behaviour is to create a new copy
-of the module in the current directory.
-
-=head1 SYNOPSIS
-
-  build/pack_ostn_data --infile <OSTN_source>  --outfile ostn.data
-
-The source OSTN data set should be in OSTN02/OSTN02_OSGM02_GB.txt
-
-=head1 OPTIONS
-
-=over 4 
-
-=item --outfile ostn.data
-
-File to write to.  Defaults to "ostn.data" in current directory.  
-Any existing file will be overwritten.
-
-=back
-
-=head1 AUTHOR 
-
-Toby Thurston -- 30 Jul 2017
-
-=cut
-
-my $outfile = 'ostn.data';
-my $header = '';
-my $source = File::Spec->catfile('OSTN', '02', 'OSTN02_OSGM02_GB.txt');
-my $minx = 86000;
-my $miny = -82000;
-
-my $options_ok = GetOptions(
-    'outfile=s' => \$outfile,
-    'infile=s'  => \$source,
-    'header' => \$header,
-    'minx=i' => \$minx,
-    'miny=i' => \$miny,
-
-    'version'     => sub { warn "$0, version: $VERSION\n"; exit 0; }, 
-    'usage'       => sub { pod2usage(-verbose => 0, -exitstatus => 0) },                         
-    'help'        => sub { pod2usage(-verbose => 1, -exitstatus => 0) },                         
-    'man'         => sub { pod2usage(-verbose => 2, -exitstatus => 0) },
-
-);
-die pod2usage() if @ARGV || ! $options_ok;
-
-
-# ideally designed for 0 <= $d < 2**15 = 32768, but still returns 3 chars upto 80000
-sub b32 {
-    my $d = shift;
-    my $h = $d >> 10; $d -= $h << 10;
-    my $t = $d >> 5;  $d -= $t << 5;
-    return join '', map { chr 48+$_ } $h, $t, $d;
-}
-
+my $source = shift;
 open my $ostn_fh, '<', $source or die "Can't open $source: $!\n";
-my ($x, $y, $datum);
-warn "Reading $source....\n" ;
-my @OSTN = ();
-my $row = '';
-if ($header) {
-    <$ostn_fh>
-}
-while (<$ostn_fh>) {
-    chomp;
-    (undef, undef, undef, $x, $y, undef, $datum) = split ',';
-  
-    my $datum = int $datum;
-    $row .= (0 < $datum && $datum < 15) ? b32(int ($x*1000) - $minx) .  b32(int ($y*1000) - $miny) : '000000';
-    # The constants subtracted and added bring the values into the range 0 < xxx < 2**15
-    # Note that they are never zeros like this..  Zeros are reserved for "datum 0" - the undefined
-    # area
+my $header = <$ostn_fh>;
 
-    if ( length $row == 4206 ) {
-        push @OSTN, $row;
-        $row = '';
-    }
-}
-close $ostn_fh;
-
-open my $data_fh, '>', $outfile or die "Can't open $outfile for writing: $!\n";
-warn "Packing to $outfile...\n" ;
-my $i = 0;
-# remove the blank rows from the end
-my $blank_line = '0' x 4206;
-while (1) {
-    last if $blank_line ne $OSTN[-1];
-    pop @OSTN;
+my @ee;
+my @nn;
+my @dd;
+while (my $line = <$ostn_fh>) {
+    chomp($line);
+    my ($id, $easting, $northing, $e_shift, $n_shift, $h_shift, $datum) = split ',', $line;
+    push @ee, int $e_shift * 1000;
+    push @nn, int $n_shift * 1000;
+    push @dd, int $datum;
 }
 
-for my $row (@OSTN) {
-    $i++;
-    die "Bad row $i" unless 4206 == length $row;
-    my ($zeros, $data) = $row =~ m{\A ((?:0{6})*)(.*?)(?:0{6})*\Z}iosxm;
-    die "Zeros not in sixes $i" if length($zeros) % 6;
-    die "Data not in sixes $i" if length($data) % 6;
-    printf $data_fh "%03d%s\n", length($zeros)/6, $data;
-}
-close $data_fh;
-warn "Wrote $i rows to $outfile using ($minx, $miny) minima\n";
+my $min_e = min @ee;
+my $min_n = min @nn;
+
+my $count = scalar @ee;
+open my $east_fh, '>', "ostn_east_shift_$min_e" ;
+print $east_fh pack("S<[$count]", map { $_ - $min_e } @ee);
+close $east_fh;
+
+$count = scalar @nn;
+open my $north_fh, '>', "ostn_north_shift_$min_n";
+print $north_fh pack("S<[$count]", map { $_ - $min_n } @nn);
+close $north_fh;
+

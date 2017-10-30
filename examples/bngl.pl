@@ -45,7 +45,7 @@ you will get back a lat/lon pair, and vice versa.
 If you supply no argument, then a random grid reference is supplied.
 
 You can also pipe the argument from another program, and pipe the output to something else.
-If you connect the output to a pipe you will get just the coordinates, without the facny message.
+If you connect the output to a pipe you will get just the coordinates, without the fancy message.
 
 =over 4 
 
@@ -92,7 +92,7 @@ You may need to install L<Browser::Open> and L<IO::Interactive>.
 
 =head1 AUTHOR
 
-Toby Thurston -- 30 Jul 2017
+Toby Thurston -- 30 Oct 2017 
 
 toby@cpan.org
 
