@@ -10,6 +10,8 @@ Revision history for Perl extension Geo::Coordinates::OSGB
 
     - Updated pod in OSGB.pm and OSGB/Background.pod
 
+    - Drop support for Perl 5.08 - if you must have 5.08 see the note in OSGB.pm
+
 2.19 July 2017
 
     - Go faster stripes on main conversion routines

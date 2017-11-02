@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 use File::Share ':all';
-use 5.008;    # at least Perl 5.08 please
+use 5.010;    # at least Perl 5.10 please
 
 our $VERSION = '2.20';
 
@@ -64,8 +64,15 @@ sub _load_ostn_data {
     open my $fh, '< :raw :bytes', $name;
     my $count = read $fh, my $data, 1753902;
     close $fh;
-    return unpack "S<[$count]", $data;
+    return unpack "S<[$count]", $data;  # Note the byte order modifiers....
 }
+
+# Perl 5.08: I've use the byte order modifier "<" on the unpack command above
+# because this means we are system independent and the binary data can be
+# read of little endian and big endian machines.  But this needs Perl 5.10 or 
+# better.  If you must have perl 5.08, then you will need to get a copy of 
+# OSTN15 from the OSGB, modify "build/pack_ostn_data" to pack the data in your 
+# native format, and then modify the "unpack" above to match.  
 
 my @EE_SHIFTS = _load_ostn_data($ostn_ee_file);
 my @NN_SHIFTS = _load_ostn_data($ostn_nn_file);
@@ -723,7 +730,7 @@ platform.
 
 =head1 DEPENDENCIES
 
-Perl 5.08 or better.
+Perl 5.10 or better.
 
 =head1 INCOMPATIBILITIES
 

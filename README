@@ -44,7 +44,7 @@ may not need sudo depending on how you have set up your system.
 
 DEPENDENCIES
 
-perl 5.08 or better 
+perl 5.10 or better 
 File::Share
 
 COPYRIGHT AND LICENCE

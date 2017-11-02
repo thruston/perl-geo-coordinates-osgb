@@ -6,7 +6,7 @@ use base qw(Exporter);
 use strict;
 use warnings;
 use Carp;
-use 5.008; # At least Perl 5.08 please, be sure to change POD below if you update
+use 5.010; # At least Perl 5.10 please, be sure to change POD below if you update
 
 our $VERSION = '2.20';
 
@@ -745,11 +745,11 @@ about it.
 
 There is no configuration required either of these modules or your
 environment.  It should work on any recent version of Perl better than
-5.8, on any platform.
+5.10, on any platform.
 
 =head1 DEPENDENCIES
 
-Perl 5.08 or better.
+Perl 5.10 or better.
 
 =head1 INCOMPATIBILITIES
 
