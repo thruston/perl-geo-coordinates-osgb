@@ -1,10 +1,10 @@
 #! /usr/bin/perl -w
 
-# Toby Thurston -- 25 Oct 2017 
+# Toby Thurston -- 02 Nov 2017
 
 use strict;
 use warnings;
-use List::Util qw/min max/;
+use List::Util qw/min/;
 
 my $source = shift;
 open my $ostn_fh, '<', $source or die "Can't open $source: $!\n";
@@ -12,13 +12,12 @@ my $header = <$ostn_fh>;
 
 my @ee;
 my @nn;
-my @dd;
+
 while (my $line = <$ostn_fh>) {
     chomp($line);
     my ($id, $easting, $northing, $e_shift, $n_shift, $h_shift, $datum) = split ',', $line;
     push @ee, int $e_shift * 1000;
     push @nn, int $n_shift * 1000;
-    push @dd, int $datum;
 }
 
 my $min_e = min @ee;

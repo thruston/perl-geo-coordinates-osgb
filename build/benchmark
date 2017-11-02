@@ -9,7 +9,7 @@ use Geo::Coordinates::OSGB   qw/grid_to_ll grid_to_ll_helmert ll_to_grid ll_to_g
 use Benchmark qw/timethese/;
 use Config;
 
-our $VERSION = '2.19';
+our $VERSION = '2.20';
 
 my $times = timethese( -4, {
     ll_to_grid         => 'll_to_grid(52 + rand 3, 0 - rand 3)',
