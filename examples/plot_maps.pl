@@ -1,10 +1,10 @@
-# Toby Thurston -- 09 Jun 2017 
+# Toby Thurston -- 12 Nov 2017 
 # Plot a nice picture of a series of maps
 
 use strict;
 use warnings;
 
-use Geo::Coordinates::OSGB       qw(ll_to_grid_helmert);
+use Geo::Coordinates::OSGB       qw(ll_to_grid grid_to_ll);
 use Geo::Coordinates::OSGB::Grid qw(format_grid);
 use Geo::Coordinates::OSGB::Maps qw(%maps %name_for_map_series);
 
@@ -14,7 +14,7 @@ use File::Temp;
 use File::Spec;
 use Carp;
 
-our $VERSION = '2.20';
+our $VERSION = '2.21';
 
 =pod
 
@@ -31,7 +31,7 @@ provided by L<Geo::Coordinates::OSGB::Maps>.
 
   perl plot_maps.pl --series A --paper A3 --outfile some.pdf 
                     --[no]grid --[no]graticule --[no]towns 
-                    --[no]ostn --[no]coast
+                    --[no]ostn --[no]coast --[no]error
 
 =head1 OPTIONS
 
@@ -82,6 +82,11 @@ separated by a line with a leading # character.  The code below shows you how to
 read it and convert it to grid coordinates.
 Default is to show the coast lines.  Turn off with C<--nocoast>.
 
+=item --[no]error
+
+Mark the extent of the round trip error.  This is zero for most of the country
+but creeps up the further you are away from 2W.
+
 =item --usage, help, man
 
 Show increasing amounts of help text, and exit.
@@ -100,13 +105,16 @@ This section describes how L<Geo::Coordinates::OSGB> functions are used.
 
 Since the output consists of the whole country formatted for an A4 or A3 page
 a thin line on the page will represent a distance of at least 500 m on the
-ground so the C<ll_to_grid_helmert> routine gives all the accuracy we need.
+ground, the C<ll_to_grid> routine gives more the accuracy than we need, but
+it's faster than C<ll_to_grid_helmert> and more flexible, so it's simpler just
+to use the high precision routine. 
 
-The coast line shapes also include points outside the OSTN02 area; this is another reason 
-to stick to C<ll_to_grid_helmert> directly.  
+The coast line shapes include points outside the old OSTN02 area, but 
+the new OSTN15 dataset covers all of them.
 
-Shape files usually have the coordinates given with longitude before latitude; be sure 
-to swap them round for C<ll_to_grid_helmert>.
+Shape files usually have the coordinates given with longitude before latitude; so
+you can either call them as named arguments in a hash, or let C<ll_to_grid> swap
+them round automatically.
 
 =head2 Getting the scale right
 
@@ -175,7 +183,7 @@ This is easy on OSX or Linux. On Windows these functions are also provided by Mi
 
 =head1 AUTHOR
 
-Toby Thurston -- 30 Jul 2017
+Toby Thurston -- 03 Nov 2017 
 
 toby@cpan.org
 
@@ -190,6 +198,7 @@ my $show_test_points = 0;
 my $show_ostn02     = 0;
 my $show_coast      = 1;
 my $call_MP         = 1;
+my $show_rt_error   = 0;
 my $pdf_filename;
 
 my $options_ok = GetOptions(
@@ -199,6 +208,7 @@ my $options_ok = GetOptions(
     'graticule!'  => \$show_graticule,                              
     'towns!'      => \$show_towns,
     'tests!'      => \$show_test_points,
+    'error!'      => \$show_rt_error,
     'ostn!'       => \$show_ostn02,
     'outfile=s'   => \$pdf_filename,
     'coast!'      => \$show_coast,
@@ -283,12 +293,39 @@ for my $k ( @sides, @insets ) {
     print $plotter "fill $path_for{$k} withcolor ( 0.98, 0.906, 0.71);\n";
 }
 
+if ($show_rt_error) {
+    for my $x (0..69) {
+        my $e = $x * 10000 + 5000;
+        for my $y (0..124) {
+            my $n = $y * 10000 + 5000;
+            my ($ee, $nn) = ll_to_grid(grid_to_ll($e, $n));
+            my $h = sqrt(($e-$ee)**2+($n-$nn)**2);
+            if ($h) {
+                printf $plotter 'drawdot (%.1f, %.1f) withpen pencircle scaled 4 withcolor %.2f[white,red];', 
+                $e/$scale, 
+                $n/$scale,
+                $h*100;
+            }
+        }
+    }
+    printf $plotter 'label.rt("Round trip error (mm)" infont defaultfont scaled 0.6, (%.1f, %.1f));', 
+    -176500/$scale,
+    1255000/$scale;
+    for my $i (0..5) {
+        my $e = -120000 - $i * 10000;
+        my $n = 1245000;
+        
+        printf $plotter 'drawdot (%.1f, %.1f) withpen pencircle scaled 4 withcolor %.2f[white, red];', $e/$scale, $n/$scale, $i/5;
+        printf $plotter 'label.bot("%d" infont defaultfont scaled 0.6, (%.1f, %.1f));', 2*$i, $e/$scale, $n/$scale-2;
+    }
+}
+
 if ($show_graticule) {
     print $plotter "drawoptions(withpen pencircle scaled 0.4);\n";
     for my $lon (-10..2) {
         my @points = ();
         for my $lat (496..612) {
-            push @points, sprintf '(%.1f,%.1f)', map { $_/$scale } ll_to_grid_helmert($lat/10,$lon);
+            push @points, sprintf '(%.1f,%.1f)', map { $_/$scale } ll_to_grid($lat/10,$lon);
         }
         print $plotter 'draw ', join('--', @points), ' withcolor .7[.5 green,white];';
         print $plotter sprintf 'label.bot("%s" & char 176, %s) withcolor .4 green;', $lon, $points[0];
@@ -296,7 +333,7 @@ if ($show_graticule) {
     for my $lat (50..61) {
         my @points = ();
         for my $lon (-102..22) {
-            push @points, sprintf '(%.1f,%.1f)', map { $_/$scale } ll_to_grid_helmert($lat,$lon/10);
+            push @points, sprintf '(%.1f,%.1f)', map { $_/$scale } ll_to_grid($lat,$lon/10);
         }
         print $plotter 'draw ', join('..', @points), ' withcolor .7[.5 green,white];';
         print $plotter sprintf 'label.lft("%s" & char 176, %s) withcolor .4 green;', $lat, $points[0];
@@ -338,7 +375,7 @@ if ( $show_coast && -f $coast_shapes && open my $coast, '<', $coast_shapes ) {
             @poly_path = ();
             next LINE;
         }
-        push @poly_path, sprintf "(%g,%g)", map {$_/$scale} ll_to_grid_helmert(reverse split);
+        push @poly_path, sprintf "(%g,%g)", map {$_/$scale} ll_to_grid(split);
     }
     close $coast;
 }

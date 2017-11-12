@@ -1,5 +1,13 @@
 Revision history for Perl extension Geo::Coordinates::OSGB
 
+2.20.1 November 2017
+
+    - Minor corrections to docs
+
+    - Fixed boundary bug in _find_ostn_shifts
+
+    - Added new option to plot_maps to show "round trip" conversion errors
+
 2.20 November 2017
 
     - Replaced OSTN02 data set with OSTN15, the new OSGB standard

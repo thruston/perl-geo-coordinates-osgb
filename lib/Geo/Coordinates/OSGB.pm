@@ -254,22 +254,23 @@ sub _find_OSTN_shifts_at {
     my ($easting, $northing) = @_;
 
     return if $easting < 0;
-    return if $easting > 700000;
     return if $northing < 0;
-    return if $northing > 1250000;
+    return if $easting >= 700000;
+    return if $northing >= 1250000;
 
     my $east_km = int($easting / 1000);
     my $north_km = int($northing / 1000);
+    my $index = $east_km + $north_km * 701;
 
-    my $lle = (MIN_EE_SHIFT + $EE_SHIFTS[$east_km + $north_km * 701])/1000;
-    my $lre = (MIN_EE_SHIFT + $EE_SHIFTS[$east_km + $north_km * 701 + 1])/1000;
-    my $ule = (MIN_EE_SHIFT + $EE_SHIFTS[$east_km + $north_km * 701 + 701])/1000;
-    my $ure = (MIN_EE_SHIFT + $EE_SHIFTS[$east_km + $north_km * 701 + 702])/1000;
+    my $lle = (MIN_EE_SHIFT + $EE_SHIFTS[$index])/1000;
+    my $lre = (MIN_EE_SHIFT + $EE_SHIFTS[$index + 1])/1000;
+    my $ule = (MIN_EE_SHIFT + $EE_SHIFTS[$index + 701])/1000;
+    my $ure = (MIN_EE_SHIFT + $EE_SHIFTS[$index + 702])/1000;
 
-    my $lln = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701])/1000;
-    my $lrn = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701 + 1])/1000;
-    my $uln = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701 + 701])/1000;
-    my $urn = (MIN_NN_SHIFT + $NN_SHIFTS[$east_km + $north_km * 701 + 702])/1000;
+    my $lln = (MIN_NN_SHIFT + $NN_SHIFTS[$index])/1000;
+    my $lrn = (MIN_NN_SHIFT + $NN_SHIFTS[$index + 1])/1000;
+    my $uln = (MIN_NN_SHIFT + $NN_SHIFTS[$index + 701])/1000;
+    my $urn = (MIN_NN_SHIFT + $NN_SHIFTS[$index + 702])/1000;
 
     my $t = ($easting / 1000) - $east_km;
     my $u = ($northing / 1000) - $north_km;
@@ -433,7 +434,7 @@ accurate British National grid references for use with one of the Ordnance
 Survey's paper maps.  And I<vice versa>, of course.
 
 The module is implemented purely in Perl, and should run on any platform with
-Perl version 5.8 or better.
+Perl version 5.10 or better.
 
 In this description, the abbreviations `OS' and `OSGB' mean `the Ordnance
 Survey of Great Britain': the British government agency that produces the
